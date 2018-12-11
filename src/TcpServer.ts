@@ -112,13 +112,12 @@ export default class TcpServer extends EventEmitter {
                     this.emit('timeout', client);
                     this.emit('disconnect', client);
                     if (client) client.socket = undefined;
-                    socket.end();
+                    socket.destroy();
                 });
             }
 
             // look for any disconnects
             socket.on('end', () => {
-                console.log('raised end');
                 const client = this.clients.find(c => c.socket === socket);
                 if (client) {
                     this.emit('disconnect', client);

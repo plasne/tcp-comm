@@ -18,6 +18,7 @@ class PartitionerClient extends events_1.EventEmitter {
     constructor(options) {
         super();
         this.socketIsOpen = false;
+        this.messageId = 0;
         // options or defaults
         this.options = options || {};
         this.options.id = this.options.id || uuid_1.v4();
@@ -34,22 +35,28 @@ class PartitionerClient extends events_1.EventEmitter {
             }
         });
         // start the timed checkin process
-        setInterval(() => {
-            this.checkin();
-        }, this.options.checkin);
+        const checkin = async () => {
+            await this.checkin();
+            setTimeout(() => {
+                checkin();
+            }, this.options.checkin);
+        };
+        checkin();
     }
-    checkin() {
+    async checkin() {
         try {
             if (this.socket && this.socketIsOpen) {
-                this.send({
+                await this.send({
                     cmd: 'checkin',
                     payload: this.options.id
-                });
+                }, true);
                 this.emit('checkin');
             }
         }
         catch (error) {
             this.emit('error', error, 'checkin');
+            if (this.socket)
+                this.socket.end();
         }
     }
     connect() {
@@ -70,8 +77,9 @@ class PartitionerClient extends events_1.EventEmitter {
                         const str = data.toString('utf8');
                         if (str) {
                             const msg = JSON.parse(str);
-                            this.emit('message', msg);
-                            this.emit('data', msg.payload);
+                            if (msg.cmd === 'ack') {
+                                this.emit(`ack:${msg.id}`, msg.payload);
+                            }
                         }
                     }
                     catch (error) {
@@ -134,17 +142,36 @@ class PartitionerClient extends events_1.EventEmitter {
             connectToServer();
         }, 0);
     }
-    send(msg) {
+    send(msg, receipt = false) {
         return new Promise((resolve, reject) => {
             try {
                 if (this.socket && this.socketIsOpen) {
-                    const s = JSON.stringify(msg) + '\n';
-                    this.socket.write(s, () => {
-                        resolve();
+                    if (receipt) {
+                        msg.id = this.messageId;
+                        this.messageId++;
+                    }
+                    const str = JSON.stringify(msg) + '\n';
+                    this.socket.write(str, () => {
+                        if (receipt) {
+                            // if a receipt was requested, wait for it
+                            const to = setTimeout(() => {
+                                reject(new Error(`ETIMEOUT: failed to get receipt before timeout.`));
+                            }, this.options.timeout);
+                            this.once(`ack:${this.messageId}`, payload => {
+                                clearTimeout(to);
+                                resolve(payload);
+                            });
+                        }
+                        else {
+                            // if no receipt was requested the send is done
+                            resolve();
+                        }
                     });
                 }
+                else if (receipt) {
+                    reject(new Error(`ENOTOPEN: a receipt was requested but the socket is not open.`));
+                }
                 else {
-                    // if there is no receipt requirement, then who cares if it cannot send
                     resolve();
                 }
             }

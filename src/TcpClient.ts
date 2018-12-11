@@ -27,6 +27,7 @@ export default class PartitionerClient extends EventEmitter {
     public options: IPartitionerClientOptions;
     private socket?: net.Socket;
     private socketIsOpen: boolean = false;
+    private messageId: number = 0;
 
     public constructor(options?: IPartitionerClientOptions) {
         super();
@@ -49,22 +50,30 @@ export default class PartitionerClient extends EventEmitter {
         });
 
         // start the timed checkin process
-        setInterval(() => {
-            this.checkin();
-        }, this.options.checkin);
+        const checkin = async () => {
+            await this.checkin();
+            setTimeout(() => {
+                checkin();
+            }, this.options.checkin);
+        };
+        checkin();
     }
 
-    public checkin() {
+    public async checkin() {
         try {
             if (this.socket && this.socketIsOpen) {
-                this.send({
-                    cmd: 'checkin',
-                    payload: this.options.id
-                });
+                await this.send(
+                    {
+                        cmd: 'checkin',
+                        payload: this.options.id
+                    },
+                    true
+                );
                 this.emit('checkin');
             }
         } catch (error) {
             this.emit('error', error, 'checkin');
+            if (this.socket) this.socket.end();
         }
     }
 
@@ -89,8 +98,9 @@ export default class PartitionerClient extends EventEmitter {
                         const str = data.toString('utf8');
                         if (str) {
                             const msg: IMessage = JSON.parse(str);
-                            this.emit('message', msg);
-                            this.emit('data', msg.payload);
+                            if (msg.cmd === 'ack') {
+                                this.emit(`ack:${msg.id}`, msg.payload);
+                            }
                         }
                     } catch (error) {
                         this.emit('error', error, 'data');
@@ -158,16 +168,41 @@ export default class PartitionerClient extends EventEmitter {
         }, 0);
     }
 
-    public send(msg: IMessage) {
-        return new Promise<void>((resolve, reject) => {
+    public send(msg: IMessage, receipt: boolean = false) {
+        return new Promise<any>((resolve, reject) => {
             try {
                 if (this.socket && this.socketIsOpen) {
-                    const s = JSON.stringify(msg) + '\n';
-                    this.socket.write(s, () => {
-                        resolve();
+                    if (receipt) {
+                        msg.id = this.messageId;
+                        this.messageId++;
+                    }
+                    const str = JSON.stringify(msg) + '\n';
+                    this.socket.write(str, () => {
+                        if (receipt) {
+                            // if a receipt was requested, wait for it
+                            const to = setTimeout(() => {
+                                reject(
+                                    new Error(
+                                        `ETIMEOUT: failed to get receipt before timeout.`
+                                    )
+                                );
+                            }, this.options.timeout);
+                            this.once(`ack:${this.messageId}`, payload => {
+                                clearTimeout(to);
+                                resolve(payload);
+                            });
+                        } else {
+                            // if no receipt was requested the send is done
+                            resolve();
+                        }
                     });
+                } else if (receipt) {
+                    reject(
+                        new Error(
+                            `ENOTOPEN: a receipt was requested but the socket is not open.`
+                        )
+                    );
                 } else {
-                    // if there is no receipt requirement, then who cares if it cannot send
                     resolve();
                 }
             } catch (error) {
