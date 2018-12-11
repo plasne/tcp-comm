@@ -91,7 +91,9 @@ class PartitionerClient extends events_1.EventEmitter {
         // look for any communication errors
         this.socket.on('error', error => {
             if (error.message.includes('ECONN')) {
-                setTimeout(this.connect, 1000);
+                setTimeout(() => {
+                    connectToServer();
+                }, 1000);
             }
             this.emit('error', error, 'socket');
         });
@@ -120,7 +122,6 @@ class PartitionerClient extends events_1.EventEmitter {
             catch (error) {
                 this.emit('error', error, 'connect');
                 setTimeout(() => {
-                    console.log(this);
                     connectToServer();
                 }, 1000); // keep trying
             }
