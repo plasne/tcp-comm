@@ -135,10 +135,8 @@ export default class TcpServer extends EventEmitter {
     public broadcast(msg: IMessage) {
         const promises: Array<Promise<void>> = [];
         for (const client of this.clients) {
-            if (client.socket) {
-                const promise = this.send(client, msg);
-                promises.push(promise);
-            }
+            const promise = this.send(client, msg);
+            promises.push(promise);
         }
         return Promise.all(promises);
     }
@@ -152,9 +150,8 @@ export default class TcpServer extends EventEmitter {
                         resolve();
                     });
                 } else {
-                    reject(
-                        new Error(`client "${client.id}" is not connected.`)
-                    );
+                    // if there is no receipt requirement, then who cares if it cannot send
+                    resolve();
                 }
             } catch (error) {
                 reject(error);

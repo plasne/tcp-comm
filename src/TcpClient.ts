@@ -56,7 +56,7 @@ export default class PartitionerClient extends EventEmitter {
 
     public checkin() {
         try {
-            if (this.socket) {
+            if (this.socket && this.socketIsOpen) {
                 this.send({
                     cmd: 'checkin',
                     payload: this.options.id
@@ -167,7 +167,8 @@ export default class PartitionerClient extends EventEmitter {
                         resolve();
                     });
                 } else {
-                    reject(new Error('server is not connected.'));
+                    // if there is no receipt requirement, then who cares if it cannot send
+                    resolve();
                 }
             } catch (error) {
                 reject(error);

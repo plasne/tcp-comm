@@ -114,10 +114,8 @@ class TcpServer extends events_1.EventEmitter {
     broadcast(msg) {
         const promises = [];
         for (const client of this.clients) {
-            if (client.socket) {
-                const promise = this.send(client, msg);
-                promises.push(promise);
-            }
+            const promise = this.send(client, msg);
+            promises.push(promise);
         }
         return Promise.all(promises);
     }
@@ -131,7 +129,8 @@ class TcpServer extends events_1.EventEmitter {
                     });
                 }
                 else {
-                    reject(new Error(`client "${client.id}" is not connected.`));
+                    // if there is no receipt requirement, then who cares if it cannot send
+                    resolve();
                 }
             }
             catch (error) {
