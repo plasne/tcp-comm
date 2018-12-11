@@ -92,12 +92,10 @@ export default class TcpServer extends EventEmitter {
                                     this.emit('connect', client);
                                 }
                                 this.emit('checkin', client);
-                                /*
                                 this.send(client, {
-                                    cmd: 'receipt',
-
+                                    cmd: 'ack:checkin',
+                                    payload: null
                                 });
-                                */
                                 break;
                         }
                     }

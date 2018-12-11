@@ -26,6 +26,7 @@ function toInt(value: any, dflt: number) {
 export default class PartitionerClient extends EventEmitter {
     public options: IPartitionerClientOptions;
     private socket?: net.Socket;
+    private socketIsOpen: boolean = false;
 
     public constructor(options?: IPartitionerClientOptions) {
         super();
@@ -69,11 +70,13 @@ export default class PartitionerClient extends EventEmitter {
 
     public connect() {
         // use a new socket
+        this.socketIsOpen = false;
         this.socket = new net.Socket();
 
         // handle connection
         this.socket.on('connect', () => {
             if (this.socket) {
+                this.socketIsOpen = true;
                 this.emit('connect');
 
                 // pipe input to a stream and break on messages
@@ -121,6 +124,7 @@ export default class PartitionerClient extends EventEmitter {
         // look for any disconnects
         this.socket.on('end', () => {
             // dispose of the socket
+            this.socketIsOpen = false;
             this.socket = undefined;
 
             // emit disonnect
@@ -157,7 +161,7 @@ export default class PartitionerClient extends EventEmitter {
     public send(msg: IMessage) {
         return new Promise<void>((resolve, reject) => {
             try {
-                if (this.socket && !this.socket.connecting) {
+                if (this.socket && this.socketIsOpen) {
                     const s = JSON.stringify(msg) + '\n';
                     this.socket.write(s, () => {
                         resolve();

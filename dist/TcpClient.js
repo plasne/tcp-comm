@@ -17,6 +17,7 @@ function toInt(value, dflt) {
 class PartitionerClient extends events_1.EventEmitter {
     constructor(options) {
         super();
+        this.socketIsOpen = false;
         // options or defaults
         this.options = options || {};
         this.options.id = this.options.id || uuid_1.v4();
@@ -53,10 +54,12 @@ class PartitionerClient extends events_1.EventEmitter {
     }
     connect() {
         // use a new socket
+        this.socketIsOpen = false;
         this.socket = new net.Socket();
         // handle connection
         this.socket.on('connect', () => {
             if (this.socket) {
+                this.socketIsOpen = true;
                 this.emit('connect');
                 // pipe input to a stream and break on messages
                 this.socket.setEncoding('utf8');
@@ -100,6 +103,7 @@ class PartitionerClient extends events_1.EventEmitter {
         // look for any disconnects
         this.socket.on('end', () => {
             // dispose of the socket
+            this.socketIsOpen = false;
             this.socket = undefined;
             // emit disonnect
             this.emit('disconnect');
@@ -133,7 +137,7 @@ class PartitionerClient extends events_1.EventEmitter {
     send(msg) {
         return new Promise((resolve, reject) => {
             try {
-                if (this.socket && !this.socket.connecting) {
+                if (this.socket && this.socketIsOpen) {
                     const s = JSON.stringify(msg) + '\n';
                     this.socket.write(s, () => {
                         resolve();
