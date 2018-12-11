@@ -120,6 +120,7 @@ class PartitionerClient extends events_1.EventEmitter {
             catch (error) {
                 this.emit('error', error, 'connect');
                 setTimeout(() => {
+                    console.log(this);
                     connectToServer();
                 }, 1000); // keep trying
             }

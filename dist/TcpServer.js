@@ -71,6 +71,12 @@ class TcpServer extends events_1.EventEmitter {
                                     this.emit('connect', client);
                                 }
                                 this.emit('checkin', client);
+                                /*
+                                this.send(client, {
+                                    cmd: 'receipt',
+
+                                });
+                                */
                                 break;
                         }
                     }
