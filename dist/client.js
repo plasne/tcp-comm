@@ -22,6 +22,7 @@ cmd.option('-l, --log-level <s>', 'LOG_LEVEL. The minimum level to log (error, w
     .option('-i, --client-id <s>', 'CLIENT_ID. The unique identifier of this client. Default is a random GUID, but this means if the client is recycled it cannot be reassigned to the previous partitions.')
     .option('-a, --address <s>', 'ADDRESS. The address of the server. Default is "127.0.0.1".')
     .option('-p, --port <i>', 'PORT. The port that is presenting the tcp interface. Default is "8000".', parseInt)
+    .option('-t, --timeout <i>', 'TIMEOUT. If a response is not received from the server in this period (in milliseconds), the client is disconnected. Default is "30000" (30 seconds).', parseInt)
     .option('-c, --checkin <i>', 'CHECKIN. The time between check-ins to the server (in milliseconds). Default is "10000" (10 seconds).', parseInt)
     .parse(process.argv);
 // globals
@@ -29,6 +30,7 @@ const LOG_LEVEL = cmd.logLevel || process.env.LOG_LEVEL || 'info';
 const CLIENT_ID = cmd.clientId || process.env.CLIENT_ID;
 const ADDRESS = cmd.address || process.env.ADDRESS;
 const PORT = cmd.port || process.env.PORT;
+const TIMEOUT = cmd.timeout || process.env.TIMEOUT;
 const CHECKIN = cmd.checkin || process.env.CHECKIN;
 // start logging
 const logColors = {
@@ -58,7 +60,8 @@ async function setup() {
             address: ADDRESS,
             checkin: CHECKIN,
             id: CLIENT_ID,
-            port: PORT
+            port: PORT,
+            timeout: TIMEOUT
         })
             .on('connect', () => {
             logger.verbose(`connected to server at "${client.options.address}:${client.options.port}".`);

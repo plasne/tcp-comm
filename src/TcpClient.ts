@@ -13,6 +13,7 @@ export interface IPartitionerClientOptions {
     id?: string;
     address?: string;
     port?: number;
+    timeout?: number;
     checkin?: number;
 }
 
@@ -70,10 +71,8 @@ export default class PartitionerClient extends EventEmitter {
             this.socketIsConnected = true;
             this.emit('connect');
 
-            // set encoding
-            this.socket.setEncoding('utf8');
-
             // pipe input to a stream and break on messages
+            this.socket.setEncoding('utf8');
             const stream = this.socket.pipe(split());
 
             // handle messages
@@ -108,6 +107,22 @@ export default class PartitionerClient extends EventEmitter {
             setTimeout(checkin, 0);
         });
 
+        // function to reconnect
+        const reconnect = () => {
+            this.socketIsConnected = false;
+            this.emit('disconnect');
+            setTimeout(this.connect, 1000); // start trying to reconnect
+        };
+
+        // handle timeouts
+        if (this.options.timeout) {
+            this.socket.setTimeout(this.options.timeout);
+            this.socket.on('timeout', () => {
+                this.emit('timeout');
+                reconnect();
+            });
+        }
+
         // look for any communication errors
         this.socket.on('error', error => {
             if (error.message.includes('ECONN')) {
@@ -118,8 +133,7 @@ export default class PartitionerClient extends EventEmitter {
 
         // look for any disconnects
         this.socket.on('end', () => {
-            this.socketIsConnected = false;
-            this.emit('disconnect');
+            reconnect();
         });
     }
 

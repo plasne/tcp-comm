@@ -19,16 +19,12 @@ const TcpServer_1 = __importDefault(require("./TcpServer"));
 dotenv.config();
 // define options
 cmd.option('-l, --log-level <s>', 'LOG_LEVEL. The minimum level to log (error, warn, info, verbose, debug, silly). Defaults to "info".', /^(error|warn|info|verbose|debug|silly)$/i)
-    .option('-p, --port <s>', '[REQUIRED] PORT. The port that is presenting the tcp interface. Default is "8000".', parseInt)
-    .option('-r, --rebalance <i>', '[REQUIRED] REBALANCE. The number of milliseconds between rebalancing the partitions. Default is "10000" (10 seconds).', parseInt)
-    .option('-i, --imbalance <i>', '[REQUIRED] IMBALANCE. If set to "0" the partitions will distributed equally, with a greater number, REBALANCE will allow a client to have more partitions than its peers per this value. Default is "0".', parseInt)
-    .option('-t, --timeout <i>', '[REQUIRED] TIMEOUT. A client must checkin within the timeout period in milliseconds or its partitions will be reassigned. Default is "30000".', parseInt)
+    .option('-p, --port <s>', 'PORT. The port that is presenting the tcp interface. Default is "8000".', parseInt)
+    .option('-t, --timeout <i>', 'TIMEOUT. A client must communicate within the timeout period (in milliseconds) or it is disconnected. Default is "30000" (30 seconds).', parseInt)
     .parse(process.argv);
 // globals
 const LOG_LEVEL = cmd.logLevel || process.env.LOG_LEVEL || 'info';
 const PORT = cmd.port || process.env.PORT;
-const REBALANCE = cmd.rebalance || process.env.REBALANCE;
-const IMBALANCE = cmd.imbalance || process.env.IMBALANCE;
 const TIMEOUT = cmd.timeout || process.env.TIMEOUT;
 // start logging
 const logColors = {
@@ -55,9 +51,7 @@ async function setup() {
         console.log(`LOG_LEVEL is "${LOG_LEVEL}".`);
         // define the connection
         const server = new TcpServer_1.default({
-            imbalance: IMBALANCE,
             port: PORT,
-            rebalance: REBALANCE,
             timeout: TIMEOUT
         })
             .on('listen', () => {
@@ -94,8 +88,6 @@ async function setup() {
         });
         // log settings
         logger.info(`PORT is "${server.options.port}".`);
-        logger.info(`REBALANCE is "${server.options.rebalance}".`);
-        logger.info(`IMBALANCE is "${server.options.imbalance}".`);
         logger.info(`TIMEOUT is "${server.options.timeout}".`);
         // start listening
         server.listen();

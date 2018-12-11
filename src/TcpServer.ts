@@ -9,8 +9,6 @@ import IMessage from './IMessage';
 
 export interface ITcpServerOptions {
     port?: number;
-    rebalance?: number;
-    imbalance?: number;
     timeout?: number;
 }
 
@@ -36,8 +34,6 @@ export default class TcpServer extends EventEmitter {
         // options or defaults
         this.options = options || {};
         this.options.port = toInt(this.options.port, 8000);
-        this.options.rebalance = toInt(this.options.rebalance, 10000);
-        this.options.imbalance = toInt(this.options.imbalance, 0);
         this.options.timeout = toInt(this.options.timeout, 30000);
 
         // if there is a handler, then emit errors, otherwise, throw them
@@ -45,6 +41,7 @@ export default class TcpServer extends EventEmitter {
             // prevents: https://nodejs.org/api/events.html#events_error_events
             if (this.listenerCount('error') === 1) {
                 setTimeout(() => {
+                    console.error('got here!!!!');
                     throw error;
                 }, 0);
             }
@@ -102,6 +99,18 @@ export default class TcpServer extends EventEmitter {
                     this.emit('error', error, 'data');
                 }
             });
+
+            // handle timeouts
+            if (this.options.timeout) {
+                socket.setTimeout(this.options.timeout);
+                socket.on('timeout', () => {
+                    const client = this.clients.find(c => c.socket === socket);
+                    this.emit('timeout', client);
+                    this.emit('disconnect', client);
+                    if (client) client.socket = undefined;
+                    socket.end();
+                });
+            }
 
             // look for any disconnects
             socket.on('end', () => {

@@ -27,6 +27,11 @@ cmd.option(
         parseInt
     )
     .option(
+        '-t, --timeout <i>',
+        'TIMEOUT. If a response is not received from the server in this period (in milliseconds), the client is disconnected. Default is "30000" (30 seconds).',
+        parseInt
+    )
+    .option(
         '-c, --checkin <i>',
         'CHECKIN. The time between check-ins to the server (in milliseconds). Default is "10000" (10 seconds).',
         parseInt
@@ -38,6 +43,7 @@ const LOG_LEVEL = cmd.logLevel || process.env.LOG_LEVEL || 'info';
 const CLIENT_ID = cmd.clientId || process.env.CLIENT_ID;
 const ADDRESS = cmd.address || process.env.ADDRESS;
 const PORT = cmd.port || process.env.PORT;
+const TIMEOUT = cmd.timeout || process.env.TIMEOUT;
 const CHECKIN = cmd.checkin || process.env.CHECKIN;
 
 // start logging
@@ -77,7 +83,8 @@ async function setup() {
             address: ADDRESS,
             checkin: CHECKIN,
             id: CLIENT_ID,
-            port: PORT
+            port: PORT,
+            timeout: TIMEOUT
         })
             .on('connect', () => {
                 logger.verbose(
