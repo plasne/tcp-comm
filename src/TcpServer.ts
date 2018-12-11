@@ -92,11 +92,16 @@ export default class TcpServer extends EventEmitter {
                                     this.emit('connect', client);
                                 }
                                 this.emit('checkin', client);
-                                this.send(client, {
-                                    cmd: 'ack:checkin',
-                                    payload: null
-                                });
                                 break;
+                        }
+
+                        // send ack if appropriate
+                        if (msg.cmd !== 'ack' && msg.id) {
+                            this.emit('ack', msg);
+                            this.send(socket, {
+                                cmd: 'ack',
+                                id: msg.id
+                            });
                         }
                     }
                 } catch (error) {
@@ -134,24 +139,21 @@ export default class TcpServer extends EventEmitter {
     public broadcast(msg: IMessage) {
         const promises: Array<Promise<void>> = [];
         for (const client of this.clients) {
-            const promise = this.send(client, msg);
-            promises.push(promise);
+            if (client.socket) {
+                const promise = this.send(client.socket, msg);
+                promises.push(promise);
+            }
         }
         return Promise.all(promises);
     }
 
-    public send(client: IClient, msg: IMessage) {
+    private send(socket: net.Socket, msg: IMessage) {
         return new Promise<void>((resolve, reject) => {
             try {
-                if (client.socket) {
-                    const s = JSON.stringify(msg) + '\n';
-                    client.socket.write(s, () => {
-                        resolve();
-                    });
-                } else {
-                    // if there is no receipt requirement, then who cares if it cannot send
+                const s = JSON.stringify(msg) + '\n';
+                socket.write(s, () => {
                     resolve();
-                }
+                });
             } catch (error) {
                 reject(error);
             }

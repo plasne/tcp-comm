@@ -173,8 +173,8 @@ export default class PartitionerClient extends EventEmitter {
             try {
                 if (this.socket && this.socketIsOpen) {
                     if (receipt) {
-                        msg.id = this.messageId;
                         this.messageId++;
+                        msg.id = this.messageId;
                     }
                     const str = JSON.stringify(msg) + '\n';
                     this.socket.write(str, () => {

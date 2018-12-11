@@ -68,6 +68,9 @@ async function setup() {
             .on('checkin', (client) => {
             logger.info(`client "${client.id}" checked-in.`);
         })
+            .on('ack', (msg) => {
+            logger.debug(`acknowledged message "${msg.id}".`);
+        })
             .on('disconnect', (client) => {
             if (client) {
                 logger.info(`client "${client.id}" disconnected.`);

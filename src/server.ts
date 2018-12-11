@@ -2,6 +2,7 @@
 import cmd = require('commander');
 import dotenv = require('dotenv');
 import * as winston from 'winston';
+import IMessage from './IMessage';
 import TcpServer, { IClient } from './TcpServer';
 
 // set env
@@ -83,6 +84,9 @@ async function setup() {
             })
             .on('checkin', (client: IClient) => {
                 logger.info(`client "${client.id}" checked-in.`);
+            })
+            .on('ack', (msg: IMessage) => {
+                logger.debug(`acknowledged message "${msg.id}".`);
             })
             .on('disconnect', (client?: IClient) => {
                 if (client) {

@@ -71,11 +71,15 @@ class TcpServer extends events_1.EventEmitter {
                                     this.emit('connect', client);
                                 }
                                 this.emit('checkin', client);
-                                this.send(client, {
-                                    cmd: 'ack:checkin',
-                                    payload: null
-                                });
                                 break;
+                        }
+                        // send ack if appropriate
+                        if (msg.cmd !== 'ack' && msg.id) {
+                            this.emit('ack', msg);
+                            this.send(socket, {
+                                cmd: 'ack',
+                                id: msg.id
+                            });
                         }
                     }
                 }
@@ -113,24 +117,20 @@ class TcpServer extends events_1.EventEmitter {
     broadcast(msg) {
         const promises = [];
         for (const client of this.clients) {
-            const promise = this.send(client, msg);
-            promises.push(promise);
+            if (client.socket) {
+                const promise = this.send(client.socket, msg);
+                promises.push(promise);
+            }
         }
         return Promise.all(promises);
     }
-    send(client, msg) {
+    send(socket, msg) {
         return new Promise((resolve, reject) => {
             try {
-                if (client.socket) {
-                    const s = JSON.stringify(msg) + '\n';
-                    client.socket.write(s, () => {
-                        resolve();
-                    });
-                }
-                else {
-                    // if there is no receipt requirement, then who cares if it cannot send
+                const s = JSON.stringify(msg) + '\n';
+                socket.write(s, () => {
                     resolve();
-                }
+                });
             }
             catch (error) {
                 reject(error);
