@@ -64,10 +64,13 @@ async function setup() {
             timeout: TIMEOUT
         })
             .on('connect', () => {
-            logger.verbose(`connected to server at "${client.options.address}:${client.options.port}".`);
+            logger.info(`connected to server at "${client.options.address}:${client.options.port}".`);
+        })
+            .on('timeout', () => {
+            logger.info('connection timed-out.');
         })
             .on('disconnect', () => {
-            logger.verbose(`disconnected from server.`);
+            logger.info(`disconnected from server.`);
         })
             .on('checkin', () => {
             logger.debug(`checked-in to server.`);
@@ -80,6 +83,7 @@ async function setup() {
         logger.info(`ID is "${client.options.id}".`);
         logger.info(`ADDRESS is "${client.options.address}".`);
         logger.info(`PORT is "${client.options.port}".`);
+        logger.info(`TIMEOUT is "${client.options.timeout}".`);
         logger.info(`CHECKIN is "${client.options.checkin}".`);
         // connect
         client.connect();

@@ -93,6 +93,7 @@ class TcpServer extends events_1.EventEmitter {
             }
             // look for any disconnects
             socket.on('end', () => {
+                console.log('raised end');
                 const client = this.clients.find(c => c.socket === socket);
                 if (client) {
                     this.emit('disconnect', client);

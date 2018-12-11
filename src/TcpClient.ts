@@ -25,8 +25,7 @@ function toInt(value: any, dflt: number) {
 // define server logic
 export default class PartitionerClient extends EventEmitter {
     public options: IPartitionerClientOptions;
-    private socket: net.Socket = new net.Socket();
-    private socketIsConnected: boolean = false;
+    private socket?: net.Socket;
 
     public constructor(options?: IPartitionerClientOptions) {
         super();
@@ -47,79 +46,65 @@ export default class PartitionerClient extends EventEmitter {
                 }, 0);
             }
         });
+
+        // start the timed checkin process
+        setInterval(() => {
+            this.checkin();
+        }, this.options.checkin);
+    }
+
+    public checkin() {
+        try {
+            if (this.socket) {
+                this.send({
+                    cmd: 'checkin',
+                    payload: this.options.id
+                });
+                this.emit('checkin');
+            }
+        } catch (error) {
+            this.emit('error', error, 'checkin');
+        }
     }
 
     public connect() {
-        // continually try and connect to server
-        const connectToServer = () => {
-            try {
-                if (!this.options.port) return;
-                if (!this.options.address) return;
-                this.socket.connect(
-                    this.options.port,
-                    this.options.address
-                );
-            } catch (error) {
-                this.emit('error', error, 'connect');
-                setTimeout(connectToServer, 1000); // keep trying
-            }
-        };
-        setTimeout(connectToServer, 0);
+        // use a new socket
+        this.socket = new net.Socket();
 
         // handle connection
         this.socket.on('connect', () => {
-            this.socketIsConnected = true;
-            this.emit('connect');
+            if (this.socket) {
+                this.emit('connect');
 
-            // pipe input to a stream and break on messages
-            this.socket.setEncoding('utf8');
-            const stream = this.socket.pipe(split());
+                // pipe input to a stream and break on messages
+                this.socket.setEncoding('utf8');
+                const stream = this.socket.pipe(split());
 
-            // handle messages
-            stream.on('data', data => {
-                try {
-                    const str = data.toString('utf8');
-                    if (str) {
-                        const msg: IMessage = JSON.parse(str);
-                        this.emit('message', msg);
-                        this.emit('data', msg.payload);
+                // handle messages
+                stream.on('data', data => {
+                    try {
+                        const str = data.toString('utf8');
+                        if (str) {
+                            const msg: IMessage = JSON.parse(str);
+                            this.emit('message', msg);
+                            this.emit('data', msg.payload);
+                        }
+                    } catch (error) {
+                        this.emit('error', error, 'data');
                     }
-                } catch (error) {
-                    this.emit('error', error, 'data');
-                }
-            });
+                });
 
-            // checkin every 10 sec
-            const checkin = () => {
-                try {
-                    if (this.socketIsConnected) {
-                        this.send({
-                            cmd: 'checkin',
-                            payload: this.options.id
-                        });
-                        this.emit('checkin');
-                    }
-                } catch (error) {
-                    this.emit('error', error, 'checkin');
-                }
-                setTimeout(checkin, this.options.checkin);
-            };
-            setTimeout(checkin, 0);
+                // checkin immediately on connect
+                this.checkin();
+            }
         });
-
-        // function to reconnect
-        const reconnect = () => {
-            this.socketIsConnected = false;
-            this.emit('disconnect');
-            setTimeout(this.connect, 1000); // start trying to reconnect
-        };
 
         // handle timeouts
         if (this.options.timeout) {
             this.socket.setTimeout(this.options.timeout);
             this.socket.on('timeout', () => {
                 this.emit('timeout');
-                reconnect();
+                if (this.socket) this.socket.end();
             });
         }
 
@@ -133,14 +118,44 @@ export default class PartitionerClient extends EventEmitter {
 
         // look for any disconnects
         this.socket.on('end', () => {
-            reconnect();
+            // dispose of the socket
+            this.socket = undefined;
+
+            // emit disonnect
+            this.emit('disconnect');
+
+            // try a brand new connection after 1 second
+            setTimeout(() => {
+                this.connect();
+            }, 1000);
         });
+
+        // connect to the server immediately
+        const connectToServer = () => {
+            try {
+                if (!this.options.port) return;
+                if (!this.options.address) return;
+                if (!this.socket) return;
+                this.socket.connect(
+                    this.options.port,
+                    this.options.address
+                );
+            } catch (error) {
+                this.emit('error', error, 'connect');
+                setTimeout(() => {
+                    connectToServer();
+                }, 1000); // keep trying
+            }
+        };
+        setTimeout(() => {
+            connectToServer();
+        }, 0);
     }
 
     public send(msg: IMessage) {
         return new Promise<void>((resolve, reject) => {
             try {
-                if (this.socketIsConnected) {
+                if (this.socket && !this.socket.connecting) {
                     const s = JSON.stringify(msg) + '\n';
                     this.socket.write(s, () => {
                         resolve();
