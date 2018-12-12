@@ -56,6 +56,7 @@ var net = require("net");
 var split = require("split");
 var uuid_1 = require("uuid");
 var TcpComponent_1 = require("./TcpComponent");
+/* tslint:enable */
 // define server logic
 var TcpClient = /** @class */ (function (_super) {
     __extends(TcpClient, _super);
@@ -120,43 +121,6 @@ var TcpClient = /** @class */ (function (_super) {
         enumerable: true,
         configurable: true
     });
-    TcpClient.prototype.checkinToServer = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var error_1;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        _a.trys.push([0, 3, , 4]);
-                        if (!(this.socket && this.socketIsOpen)) return [3 /*break*/, 2];
-                        return [4 /*yield*/, this.sendToServer({
-                                c: 'checkin',
-                                p: this.id
-                            }, {
-                                receipt: true
-                            })];
-                    case 1:
-                        _a.sent();
-                        this.emit('checkin');
-                        _a.label = 2;
-                    case 2: return [3 /*break*/, 4];
-                    case 3:
-                        error_1 = _a.sent();
-                        this.emit('error', error_1, 'checkin');
-                        if (this.socket)
-                            this.socket.end();
-                        return [3 /*break*/, 4];
-                    case 4: return [2 /*return*/];
-                }
-            });
-        });
-    };
-    TcpClient.prototype.process = function (socket, msg) {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                return [2 /*return*/, _super.prototype.process.call(this, socket, msg)];
-            });
-        });
-    };
     TcpClient.prototype.connect = function () {
         var _this = this;
         // ensure errors are being trapped
@@ -231,6 +195,13 @@ var TcpClient = /** @class */ (function (_super) {
             connectToServer();
         }, 0);
     };
+    TcpClient.prototype.process = function (socket, msg) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                return [2 /*return*/, _super.prototype.process.call(this, socket, msg)];
+            });
+        });
+    };
     TcpClient.prototype.sendToServer = function (msg, options) {
         if (this.socket && this.socketIsOpen) {
             return this.sendToSocket(this.socket, msg, options);
@@ -241,6 +212,36 @@ var TcpClient = /** @class */ (function (_super) {
         else {
             return Promise.resolve();
         }
+    };
+    TcpClient.prototype.checkinToServer = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var error_1;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 3, , 4]);
+                        if (!(this.socket && this.socketIsOpen)) return [3 /*break*/, 2];
+                        return [4 /*yield*/, this.sendToServer({
+                                c: 'checkin',
+                                p: this.id
+                            }, {
+                                receipt: true
+                            })];
+                    case 1:
+                        _a.sent();
+                        this.emit('checkin');
+                        _a.label = 2;
+                    case 2: return [3 /*break*/, 4];
+                    case 3:
+                        error_1 = _a.sent();
+                        this.emit('error', error_1, 'checkin');
+                        if (this.socket)
+                            this.socket.end();
+                        return [3 /*break*/, 4];
+                    case 4: return [2 /*return*/];
+                }
+            });
+        });
     };
     return TcpClient;
 }(TcpComponent_1.TcpComponent));

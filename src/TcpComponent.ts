@@ -14,6 +14,11 @@ export interface ISendOptions {
 }
 
 export abstract class TcpComponent extends EventEmitter {
+    protected static toInt(value: any) {
+        if (isNaN(value)) return undefined;
+        return parseInt(value, 10);
+    }
+
     protected options: ITcpComponentOptions;
     private messageId: number = 0;
 
@@ -27,11 +32,6 @@ export abstract class TcpComponent extends EventEmitter {
 
     public get timeout() {
         return this.options.timeout || 30000;
-    }
-
-    protected static toInt(value: any) {
-        if (isNaN(value)) return undefined;
-        return parseInt(value, 10);
     }
 
     protected async process(_: net.Socket, msg: IMessage) {
@@ -60,19 +60,19 @@ export abstract class TcpComponent extends EventEmitter {
                 const msg: IMessage = JSON.parse(str);
 
                 // handle the received message
-                const receive = async (msg: IMessage) => {
+                const receive = async (rmsg: IMessage) => {
                     // emit ack or process as appropriate
-                    switch (msg.c) {
+                    switch (rmsg.c) {
                         case 'ack':
-                            this.emit(`ack:${msg.i}`, msg.p);
+                            this.emit(`ack:${rmsg.i}`, rmsg.p);
                             break;
                         default:
-                            const response = await this.process(socket, msg);
-                            if (msg.i) {
+                            const response = await this.process(socket, rmsg);
+                            if (rmsg.i) {
                                 // send a receipt if requested
                                 const ack = {
                                     c: 'ack',
-                                    i: msg.i,
+                                    i: rmsg.i,
                                     p: response
                                 };
                                 this.sendToSocket(socket, ack);
@@ -120,12 +120,12 @@ export abstract class TcpComponent extends EventEmitter {
         return new Promise<any>((resolve, reject) => {
             try {
                 // dispatch to the server
-                const dispatch = (msg: IMessage) => {
+                const dispatch = (dmsg: IMessage) => {
                     if (options && options.receipt) {
                         this.messageId++;
-                        msg.i = this.messageId;
+                        dmsg.i = this.messageId;
                     }
-                    const str = JSON.stringify(msg) + '\n';
+                    const str = JSON.stringify(dmsg) + '\n';
                     socket.write(str, () => {
                         if (options && options.receipt) {
                             // if a receipt was requested, wait for it
@@ -136,7 +136,7 @@ export abstract class TcpComponent extends EventEmitter {
                                     )
                                 );
                             }, this.timeout);
-                            this.once(`ack:${msg.i}`, payload => {
+                            this.once(`ack:${dmsg.i}`, payload => {
                                 clearTimeout(to);
                                 resolve(payload);
                             });

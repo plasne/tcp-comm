@@ -8,9 +8,9 @@ import split = require('split');
 import { v4 as uuid } from 'uuid';
 import IMessage from './IMessage';
 import {
-    TcpComponent,
+    ISendOptions,
     ITcpComponentOptions,
-    ISendOptions
+    TcpComponent
 } from './TcpComponent';
 
 export interface ITcpClientOptions extends ITcpComponentOptions {
@@ -20,6 +20,7 @@ export interface ITcpClientOptions extends ITcpComponentOptions {
     checkin?: number;
 }
 
+/* tslint:disable */
 export declare interface TcpClient {
     on(event: 'listen', listener: () => void): this;
     on(event: 'connect', listener: () => void): this;
@@ -37,6 +38,7 @@ export declare interface TcpClient {
     ): this;
     on(event: 'error', listener: (error: Error, module: string) => void): this;
 }
+/* tslint:enable */
 
 // define server logic
 export class TcpClient extends TcpComponent {
@@ -83,30 +85,6 @@ export class TcpClient extends TcpComponent {
     public get checkin() {
         const local: ITcpClientOptions = this.options;
         return local.checkin || 10000;
-    }
-
-    private async checkinToServer() {
-        try {
-            if (this.socket && this.socketIsOpen) {
-                await this.sendToServer(
-                    {
-                        c: 'checkin',
-                        p: this.id
-                    },
-                    {
-                        receipt: true
-                    }
-                );
-                this.emit('checkin');
-            }
-        } catch (error) {
-            this.emit('error', error, 'checkin');
-            if (this.socket) this.socket.end();
-        }
-    }
-
-    protected async process(socket: net.Socket, msg: IMessage) {
-        return super.process(socket, msg);
     }
 
     public connect() {
@@ -194,6 +172,10 @@ export class TcpClient extends TcpComponent {
         }, 0);
     }
 
+    protected async process(socket: net.Socket, msg: IMessage) {
+        return super.process(socket, msg);
+    }
+
     private sendToServer(msg: IMessage, options?: ISendOptions) {
         if (this.socket && this.socketIsOpen) {
             return this.sendToSocket(this.socket, msg, options);
@@ -203,6 +185,26 @@ export class TcpClient extends TcpComponent {
             );
         } else {
             return Promise.resolve();
+        }
+    }
+
+    private async checkinToServer() {
+        try {
+            if (this.socket && this.socketIsOpen) {
+                await this.sendToServer(
+                    {
+                        c: 'checkin',
+                        p: this.id
+                    },
+                    {
+                        receipt: true
+                    }
+                );
+                this.emit('checkin');
+            }
+        } catch (error) {
+            this.emit('error', error, 'checkin');
+            if (this.socket) this.socket.end();
         }
     }
 }

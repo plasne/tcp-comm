@@ -68,6 +68,11 @@ var TcpComponent = /** @class */ (function (_super) {
         _this.options.timeout = TcpComponent.toInt(_this.options.timeout);
         return _this;
     }
+    TcpComponent.toInt = function (value) {
+        if (isNaN(value))
+            return undefined;
+        return parseInt(value, 10);
+    };
     Object.defineProperty(TcpComponent.prototype, "timeout", {
         get: function () {
             return this.options.timeout || 30000;
@@ -75,11 +80,6 @@ var TcpComponent = /** @class */ (function (_super) {
         enumerable: true,
         configurable: true
     });
-    TcpComponent.toInt = function (value) {
-        if (isNaN(value))
-            return undefined;
-        return parseInt(value, 10);
-    };
     TcpComponent.prototype.process = function (_, msg) {
         return __awaiter(this, void 0, void 0, function () {
             var _this = this;
@@ -113,26 +113,26 @@ var TcpComponent = /** @class */ (function (_super) {
                 var str = data.toString('utf8');
                 var msg_1 = JSON.parse(str);
                 // handle the received message
-                var receive_1 = function (msg) { return __awaiter(_this, void 0, void 0, function () {
+                var receive_1 = function (rmsg) { return __awaiter(_this, void 0, void 0, function () {
                     var _a, response, ack;
                     return __generator(this, function (_b) {
                         switch (_b.label) {
                             case 0:
-                                _a = msg.c;
+                                _a = rmsg.c;
                                 switch (_a) {
                                     case 'ack': return [3 /*break*/, 1];
                                 }
                                 return [3 /*break*/, 2];
                             case 1:
-                                this.emit("ack:" + msg.i, msg.p);
+                                this.emit("ack:" + rmsg.i, rmsg.p);
                                 return [3 /*break*/, 4];
-                            case 2: return [4 /*yield*/, this.process(socket, msg)];
+                            case 2: return [4 /*yield*/, this.process(socket, rmsg)];
                             case 3:
                                 response = _b.sent();
-                                if (msg.i) {
+                                if (rmsg.i) {
                                     ack = {
                                         c: 'ack',
-                                        i: msg.i,
+                                        i: rmsg.i,
                                         p: response
                                     };
                                     this.sendToSocket(socket, ack);
@@ -177,19 +177,19 @@ var TcpComponent = /** @class */ (function (_super) {
         return new Promise(function (resolve, reject) {
             try {
                 // dispatch to the server
-                var dispatch_1 = function (msg) {
+                var dispatch_1 = function (dmsg) {
                     if (options && options.receipt) {
                         _this.messageId++;
-                        msg.i = _this.messageId;
+                        dmsg.i = _this.messageId;
                     }
-                    var str = JSON.stringify(msg) + '\n';
+                    var str = JSON.stringify(dmsg) + '\n';
                     socket.write(str, function () {
                         if (options && options.receipt) {
                             // if a receipt was requested, wait for it
                             var to_1 = setTimeout(function () {
                                 reject(new Error("ETIMEOUT: failed to get receipt before timeout."));
                             }, _this.timeout);
-                            _this.once("ack:" + msg.i, function (payload) {
+                            _this.once("ack:" + dmsg.i, function (payload) {
                                 clearTimeout(to_1);
                                 resolve(payload);
                             });

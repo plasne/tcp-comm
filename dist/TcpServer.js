@@ -54,6 +54,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var net = require("net");
 var split = require("split");
 var TcpComponent_1 = require("./TcpComponent");
+/* tslint:enable */
 // define server logic
 var TcpServer = /** @class */ (function (_super) {
     __extends(TcpServer, _super);
@@ -76,42 +77,6 @@ var TcpServer = /** @class */ (function (_super) {
         enumerable: true,
         configurable: true
     });
-    TcpServer.prototype.process = function (socket, msg) {
-        return __awaiter(this, void 0, void 0, function () {
-            var client, isNew;
-            return __generator(this, function (_a) {
-                switch (msg.c) {
-                    case 'checkin':
-                        client = this.clients.find(function (c) { return c.id === msg.p; });
-                        isNew = false;
-                        if (client) {
-                            client.lastCheckin = new Date().valueOf();
-                            if (!client.socket || client.socket !== socket) {
-                                if (client.socket)
-                                    client.socket.end();
-                                client.socket = socket;
-                                isNew = true;
-                            }
-                        }
-                        else {
-                            client = {
-                                id: msg.p,
-                                lastCheckin: new Date().valueOf(),
-                                socket: socket
-                            };
-                            this.clients.push(client);
-                            isNew = true;
-                        }
-                        if (isNew) {
-                            this.emit('connect', client);
-                        }
-                        this.emit('checkin', client);
-                        break;
-                }
-                return [2 /*return*/, _super.prototype.process.call(this, socket, msg)];
-            });
-        });
-    };
     TcpServer.prototype.listen = function () {
         var _this = this;
         // ensure errors are being trapped
@@ -153,6 +118,48 @@ var TcpServer = /** @class */ (function (_super) {
             _this.emit('listen');
         });
     };
+    TcpServer.prototype.send = function (client, payload, options) {
+        return this.sendToClient(client, {
+            c: 'data',
+            p: payload
+        }, options);
+    };
+    TcpServer.prototype.process = function (socket, msg) {
+        return __awaiter(this, void 0, void 0, function () {
+            var client, isNew;
+            return __generator(this, function (_a) {
+                switch (msg.c) {
+                    case 'checkin':
+                        client = this.clients.find(function (c) { return c.id === msg.p; });
+                        isNew = false;
+                        if (client) {
+                            client.lastCheckin = new Date().valueOf();
+                            if (!client.socket || client.socket !== socket) {
+                                if (client.socket)
+                                    client.socket.end();
+                                client.socket = socket;
+                                isNew = true;
+                            }
+                        }
+                        else {
+                            client = {
+                                id: msg.p,
+                                lastCheckin: new Date().valueOf(),
+                                socket: socket
+                            };
+                            this.clients.push(client);
+                            isNew = true;
+                        }
+                        if (isNew) {
+                            this.emit('connect', client);
+                        }
+                        this.emit('checkin', client);
+                        break;
+                }
+                return [2 /*return*/, _super.prototype.process.call(this, socket, msg)];
+            });
+        });
+    };
     TcpServer.prototype.sendToClient = function (client, msg, options) {
         if (client.socket) {
             return this.sendToSocket(client.socket, msg, options);
@@ -163,12 +170,6 @@ var TcpServer = /** @class */ (function (_super) {
         else {
             return Promise.resolve();
         }
-    };
-    TcpServer.prototype.send = function (client, payload, options) {
-        return this.sendToClient(client, {
-            c: 'data',
-            p: payload
-        }, options);
     };
     return TcpServer;
 }(TcpComponent_1.TcpComponent));

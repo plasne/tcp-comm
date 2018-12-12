@@ -6,9 +6,9 @@ import net = require('net');
 import split = require('split');
 import IMessage from './IMessage';
 import {
-    TcpComponent,
+    ISendOptions,
     ITcpComponentOptions,
-    ISendOptions
+    TcpComponent
 } from './TcpComponent';
 
 export interface ITcpServerOptions extends ITcpComponentOptions {
@@ -21,6 +21,7 @@ export interface IClient {
     lastCheckin?: number;
 }
 
+/* tslint:disable */
 export declare interface TcpServer {
     on(event: 'listen', listener: () => void): this;
     on(event: 'connect', listener: (client: IClient) => void): this;
@@ -39,6 +40,7 @@ export declare interface TcpServer {
     ): this;
     on(event: 'error', listener: (error: Error, module: string) => void): this;
 }
+/* tslint:enable */
 
 // define server logic
 export class TcpServer extends TcpComponent {
@@ -58,36 +60,6 @@ export class TcpServer extends TcpComponent {
     public get port() {
         const local: ITcpServerOptions = this.options;
         return local.port || 8000;
-    }
-
-    protected async process(socket: net.Socket, msg: IMessage) {
-        switch (msg.c) {
-            case 'checkin':
-                let client = this.clients.find(c => c.id === msg.p);
-                let isNew = false;
-                if (client) {
-                    client.lastCheckin = new Date().valueOf();
-                    if (!client.socket || client.socket !== socket) {
-                        if (client.socket) client.socket.end();
-                        client.socket = socket;
-                        isNew = true;
-                    }
-                } else {
-                    client = {
-                        id: msg.p,
-                        lastCheckin: new Date().valueOf(),
-                        socket
-                    };
-                    this.clients.push(client);
-                    isNew = true;
-                }
-                if (isNew) {
-                    this.emit('connect', client);
-                }
-                this.emit('checkin', client);
-                break;
-        }
-        return super.process(socket, msg);
     }
 
     public listen() {
@@ -133,6 +105,47 @@ export class TcpServer extends TcpComponent {
         });
     }
 
+    public send(client: IClient, payload: any, options?: ISendOptions) {
+        return this.sendToClient(
+            client,
+            {
+                c: 'data',
+                p: payload
+            },
+            options
+        );
+    }
+
+    protected async process(socket: net.Socket, msg: IMessage) {
+        switch (msg.c) {
+            case 'checkin':
+                let client = this.clients.find(c => c.id === msg.p);
+                let isNew = false;
+                if (client) {
+                    client.lastCheckin = new Date().valueOf();
+                    if (!client.socket || client.socket !== socket) {
+                        if (client.socket) client.socket.end();
+                        client.socket = socket;
+                        isNew = true;
+                    }
+                } else {
+                    client = {
+                        id: msg.p,
+                        lastCheckin: new Date().valueOf(),
+                        socket
+                    };
+                    this.clients.push(client);
+                    isNew = true;
+                }
+                if (isNew) {
+                    this.emit('connect', client);
+                }
+                this.emit('checkin', client);
+                break;
+        }
+        return super.process(socket, msg);
+    }
+
     private sendToClient(
         client: IClient,
         msg: IMessage,
@@ -148,28 +161,4 @@ export class TcpServer extends TcpComponent {
             return Promise.resolve();
         }
     }
-
-    public send(client: IClient, payload: any, options?: ISendOptions) {
-        return this.sendToClient(
-            client,
-            {
-                c: 'data',
-                p: payload
-            },
-            options
-        );
-    }
-
-    /*
-    private broadcast(msg: IMessage) {
-        const promises: Array<Promise<void>> = [];
-        for (const client of this.clients) {
-            if (client.socket) {
-                const promise = this.send(client.socket, msg);
-                promises.push(promise);
-            }
-        }
-        return Promise.all(promises);
-    }
-    */
 }

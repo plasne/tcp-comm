@@ -3,7 +3,7 @@ import cmd = require('commander');
 import dotenv = require('dotenv');
 import * as winston from 'winston';
 import IMessage from './IMessage';
-import { TcpServer, IClient } from './TcpServer';
+import { IClient, TcpServer } from './TcpServer';
 
 // set env
 dotenv.config();
