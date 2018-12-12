@@ -11,6 +11,7 @@ export interface IClient {
     lastCheckin?: number;
 }
 export declare interface TcpServer {
+    on(event: string, listener: (...args: any[]) => void): this;
     on(event: 'listen', listener: () => void): this;
     on(event: 'connect', listener: (client: IClient) => void): this;
     on(event: 'checkin', listener: (client: IClient) => void): this;

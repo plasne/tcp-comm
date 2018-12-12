@@ -9,6 +9,7 @@ export interface ITcpClientOptions extends ITcpComponentOptions {
     checkin?: number;
 }
 export declare interface TcpClient {
+    on(event: string, listener: (...args: any[]) => void): this;
     on(event: 'listen', listener: () => void): this;
     on(event: 'connect', listener: () => void): this;
     on(event: 'checkin', listener: () => void): this;

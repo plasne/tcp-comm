@@ -1,5 +1,4 @@
 "use strict";
-// TODO: needs to support committing checkpoints to some kind of state
 // TODO: need to document stuff better
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {

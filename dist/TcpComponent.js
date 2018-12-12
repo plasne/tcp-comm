@@ -101,6 +101,9 @@ var TcpComponent = /** @class */ (function (_super) {
                             this.emit('data', msg.p);
                         }
                         break;
+                    default:
+                        this.emit("cmd:" + msg.c, msg.p);
+                        break;
                 }
                 return [2 /*return*/];
             });

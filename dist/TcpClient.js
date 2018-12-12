@@ -1,7 +1,4 @@
 "use strict";
-// TODO: provide a tunnel to dispatch messages
-// TODO: needs to handle reconnects
-// TODO: handle buffering messages and things like backpressure
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
         extendStatics = Object.setPrototypeOf ||
