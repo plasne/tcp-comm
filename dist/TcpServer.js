@@ -123,6 +123,16 @@ var TcpServer = /** @class */ (function (_super) {
             p: payload
         }, options);
     };
+    TcpServer.prototype.sendCommand = function (client, cmd, payload, options) {
+        var used = ['data', 'checkin'];
+        if (used.includes(cmd)) {
+            throw new Error("command \"" + cmd + "\" is a reserved keyword.");
+        }
+        return this.send(client, {
+            c: cmd,
+            p: payload
+        }, options);
+    };
     TcpServer.prototype.add = function (client) {
         this.clients.push(client);
         this.emit('add', client);

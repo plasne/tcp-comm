@@ -1,7 +1,7 @@
 /// <reference types="node" />
 import net = require('net');
 import IMessage from './IMessage';
-import { ITcpComponentOptions, TcpComponent } from './TcpComponent';
+import { ISendOptions, ITcpComponentOptions, TcpComponent } from './TcpComponent';
 export interface ITcpClientOptions extends ITcpComponentOptions {
     id?: string;
     address?: string;
@@ -29,7 +29,8 @@ export declare class TcpClient extends TcpComponent {
     readonly port: number;
     readonly checkin: number;
     connect(): void;
+    sendCommand(cmd: string, payload: any, options?: ISendOptions): Promise<any>;
     protected process(socket: net.Socket, msg: IMessage): Promise<any>;
-    private sendToServer;
+    protected sendToServer(msg: IMessage, options?: ISendOptions): Promise<any>;
     private checkinToServer;
 }

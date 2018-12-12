@@ -192,6 +192,16 @@ var TcpClient = /** @class */ (function (_super) {
             connectToServer();
         }, 0);
     };
+    TcpClient.prototype.sendCommand = function (cmd, payload, options) {
+        var used = ['data', 'checkin'];
+        if (used.includes(cmd)) {
+            throw new Error("command \"" + cmd + "\" is a reserved keyword.");
+        }
+        return this.sendToServer({
+            c: cmd,
+            p: payload
+        }, options);
+    };
     TcpClient.prototype.process = function (socket, msg) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {

@@ -30,8 +30,9 @@ export declare class TcpServer extends TcpComponent {
     readonly port: number;
     listen(): void;
     send(client: IClient, payload: any, options?: ISendOptions): Promise<any>;
+    sendCommand(client: IClient, cmd: string, payload: any, options?: ISendOptions): Promise<any>;
     add(client: IClient): void;
     remove(client: IClient): void;
     protected process(socket: net.Socket, msg: IMessage): Promise<any>;
-    private sendToClient;
+    protected sendToClient(client: IClient, msg: IMessage, options?: ISendOptions): Promise<any>;
 }

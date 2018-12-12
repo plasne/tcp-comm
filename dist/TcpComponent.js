@@ -82,27 +82,26 @@ var TcpComponent = /** @class */ (function (_super) {
     });
     TcpComponent.prototype.process = function (_, msg) {
         return __awaiter(this, void 0, void 0, function () {
+            var eid_1;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (msg.c) {
-                    case 'data':
-                        if (this.listenerCount('data') < 1) {
-                            this.emit('data', msg.p);
+                    default:
+                        eid_1 = msg.c === 'data' ? 'data' : "cmd:" + msg.c;
+                        if (this.listenerCount(eid_1) < 1) {
+                            // don't bother to emit
                         }
                         else if (msg.i) {
                             return [2 /*return*/, new Promise(function (resolve) {
                                     var respond = function (response) {
                                         resolve(response);
                                     };
-                                    _this.emit('data', msg.p, respond);
+                                    _this.emit(eid_1, msg.p, respond);
                                 })];
                         }
                         else {
-                            this.emit('data', msg.p);
+                            this.emit(eid_1, msg.p);
                         }
-                        break;
-                    default:
-                        this.emit("cmd:" + msg.c, msg.p);
                         break;
                 }
                 return [2 /*return*/];
