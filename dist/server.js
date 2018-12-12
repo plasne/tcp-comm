@@ -106,8 +106,8 @@ function setup() {
                         return [2 /*return*/];
                     });
                 }); })
-                    .on('ack', function (msg) {
-                    logger.debug("acknowledged message \"" + msg.i + "\".");
+                    .on('ack', function (ack, msg) {
+                    logger.debug("msg: \"" + msg.c + "\", ack: " + JSON.stringify(ack) + ".");
                 })
                     .on('encode', function (before, after) {
                     logger.debug("encoded \"" + before + "\" bytes into \"" + after + "\" bytes.");

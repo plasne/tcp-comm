@@ -22,7 +22,10 @@ export interface IClient {
 
 /* tslint:disable */
 export declare interface TcpServer {
-    on(event: string, listener: (...args) => void): this;
+    on(
+        event: string,
+        listener: (payload: any, respond?: (response?: any) => void) => void
+    ): this;
     on(event: 'listen', listener: () => void): this;
     on(event: 'connect', listener: (client: IClient) => void): this;
     on(event: 'checkin', listener: (client: IClient) => void): this;

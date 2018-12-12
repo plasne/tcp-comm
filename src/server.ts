@@ -85,8 +85,8 @@ async function setup() {
             .on('checkin', async (client: IClient) => {
                 logger.info(`client "${client.id}" checked-in.`);
             })
-            .on('ack', (msg: IMessage) => {
-                logger.debug(`acknowledged message "${msg.i}".`);
+            .on('ack', (ack: IMessage, msg: IMessage) => {
+                logger.debug(`msg: "${msg.c}", ack: ${JSON.stringify(ack)}.`);
             })
             .on('encode', (before: number, after: number) => {
                 logger.debug(

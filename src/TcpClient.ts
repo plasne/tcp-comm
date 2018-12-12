@@ -18,7 +18,10 @@ export interface ITcpClientOptions extends ITcpComponentOptions {
 
 /* tslint:disable */
 export declare interface TcpClient {
-    on(event: string, listener: (...args) => void): this;
+    on(
+        event: string,
+        listener: (payload: any, respond?: (response?: any) => void) => void
+    ): this;
     on(event: 'listen', listener: () => void): this;
     on(event: 'connect', listener: () => void): this;
     on(event: 'checkin', listener: () => void): this;
