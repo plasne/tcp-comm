@@ -27,6 +27,7 @@ export declare interface TcpServer {
     on(event: 'connect', listener: (client: IClient) => void): this;
     on(event: 'checkin', listener: (client: IClient) => void): this;
     on(event: 'disconnect', listener: (client?: IClient) => void): this;
+    on(event: 'add', listener: (client: IClient) => void): this;
     on(event: 'remove', listener: (client: IClient) => void): this;
     on(event: 'timeout', listener: (client: IClient) => void): this;
     on(
@@ -53,7 +54,7 @@ export class TcpServer extends TcpComponent {
         this.options = options || {};
         if (options) {
             const local: ITcpServerOptions = this.options;
-            local.port = TcpComponent.toInt(options.port);
+            local.port = TcpComponent.toInt(local.port);
         }
     }
 
@@ -116,6 +117,17 @@ export class TcpServer extends TcpComponent {
         );
     }
 
+    public add(client: IClient) {
+        this.clients.push(client);
+        this.emit('add', client);
+    }
+
+    public remove(client: IClient) {
+        const index = this.clients.indexOf(client);
+        if (index > -1) this.clients.splice(index, 1);
+        this.emit('remove', client);
+    }
+
     protected async process(socket: net.Socket, msg: IMessage) {
         switch (msg.c) {
             case 'checkin':
@@ -134,7 +146,7 @@ export class TcpServer extends TcpComponent {
                         lastCheckin: new Date().valueOf(),
                         socket
                     };
-                    this.clients.push(client);
+                    this.add(client);
                     isNew = true;
                 }
                 if (isNew) {

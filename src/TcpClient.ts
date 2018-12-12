@@ -52,8 +52,8 @@ export class TcpClient extends TcpComponent {
         this.options = options || {};
         if (options) {
             const local: ITcpClientOptions = this.options;
-            local.port = TcpComponent.toInt(options.port);
-            local.checkin = TcpComponent.toInt(options.checkin);
+            local.port = TcpComponent.toInt(local.port);
+            local.checkin = TcpComponent.toInt(local.checkin);
         }
 
         // start the timed checkin process

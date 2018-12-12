@@ -65,7 +65,7 @@ var TcpServer = /** @class */ (function (_super) {
         _this.options = options || {};
         if (options) {
             var local = _this.options;
-            local.port = TcpComponent_1.TcpComponent.toInt(options.port);
+            local.port = TcpComponent_1.TcpComponent.toInt(local.port);
         }
         return _this;
     }
@@ -124,6 +124,16 @@ var TcpServer = /** @class */ (function (_super) {
             p: payload
         }, options);
     };
+    TcpServer.prototype.add = function (client) {
+        this.clients.push(client);
+        this.emit('add', client);
+    };
+    TcpServer.prototype.remove = function (client) {
+        var index = this.clients.indexOf(client);
+        if (index > -1)
+            this.clients.splice(index, 1);
+        this.emit('remove', client);
+    };
     TcpServer.prototype.process = function (socket, msg) {
         return __awaiter(this, void 0, void 0, function () {
             var client, isNew;
@@ -147,7 +157,7 @@ var TcpServer = /** @class */ (function (_super) {
                                 lastCheckin: new Date().valueOf(),
                                 socket: socket
                             };
-                            this.clients.push(client);
+                            this.add(client);
                             isNew = true;
                         }
                         if (isNew) {

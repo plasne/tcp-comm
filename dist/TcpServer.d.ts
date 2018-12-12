@@ -15,6 +15,7 @@ export declare interface TcpServer {
     on(event: 'connect', listener: (client: IClient) => void): this;
     on(event: 'checkin', listener: (client: IClient) => void): this;
     on(event: 'disconnect', listener: (client?: IClient) => void): this;
+    on(event: 'add', listener: (client: IClient) => void): this;
     on(event: 'remove', listener: (client: IClient) => void): this;
     on(event: 'timeout', listener: (client: IClient) => void): this;
     on(event: 'data', listener: (payload: any, respond?: (response: any) => void) => void): this;
@@ -28,6 +29,8 @@ export declare class TcpServer extends TcpComponent {
     readonly port: number;
     listen(): void;
     send(client: IClient, payload: any, options?: ISendOptions): Promise<any>;
+    add(client: IClient): void;
+    remove(client: IClient): void;
     protected process(socket: net.Socket, msg: IMessage): Promise<any>;
     private sendToClient;
 }

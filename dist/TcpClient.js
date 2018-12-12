@@ -67,8 +67,8 @@ var TcpClient = /** @class */ (function (_super) {
         _this.options = options || {};
         if (options) {
             var local = _this.options;
-            local.port = TcpComponent_1.TcpComponent.toInt(options.port);
-            local.checkin = TcpComponent_1.TcpComponent.toInt(options.checkin);
+            local.port = TcpComponent_1.TcpComponent.toInt(local.port);
+            local.checkin = TcpComponent_1.TcpComponent.toInt(local.checkin);
         }
         // start the timed checkin process
         var checkin = function () { return __awaiter(_this, void 0, void 0, function () {
