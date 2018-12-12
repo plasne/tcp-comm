@@ -128,7 +128,7 @@ var TcpServer = /** @class */ (function (_super) {
         if (used.includes(cmd)) {
             throw new Error("command \"" + cmd + "\" is a reserved keyword.");
         }
-        return this.send(client, {
+        return this.sendToClient(client, {
             c: cmd,
             p: payload
         }, options);

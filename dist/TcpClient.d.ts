@@ -15,7 +15,7 @@ export declare interface TcpClient {
     on(event: 'checkin', listener: () => void): this;
     on(event: 'disconnect', listener: () => void): this;
     on(event: 'timeout', listener: () => void): this;
-    on(event: 'data', listener: (payload: any, respond?: (response: any) => void) => void): this;
+    on(event: 'data', listener: (payload: any, respond?: (response?: any) => void) => void): this;
     on(event: 'ack', listener: (msg: IMessage) => void): this;
     on(event: 'encode', listener: (before: number, after: number) => void): this;
     on(event: 'error', listener: (error: Error, module: string) => void): this;

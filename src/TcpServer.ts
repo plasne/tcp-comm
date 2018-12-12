@@ -32,7 +32,7 @@ export declare interface TcpServer {
     on(event: 'timeout', listener: (client: IClient) => void): this;
     on(
         event: 'data',
-        listener: (payload: any, respond?: (response: any) => void) => void
+        listener: (payload: any, respond?: (response?: any) => void) => void
     ): this;
     on(event: 'ack', listener: (msg: IMessage) => void): this;
     on(
@@ -127,7 +127,7 @@ export class TcpServer extends TcpComponent {
         if (used.includes(cmd)) {
             throw new Error(`command "${cmd}" is a reserved keyword.`);
         }
-        return this.send(
+        return this.sendToClient(
             client,
             {
                 c: cmd,
