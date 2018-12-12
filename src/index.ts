@@ -1,4 +1,4 @@
 // export
 export { default as IMessage } from './IMessage';
-export { default as Client } from './TcpClient';
-export { default as Server, IClient } from './TcpServer';
+export { TcpClient as Client } from './TcpClient';
+export { TcpServer as Server, IClient } from './TcpServer';

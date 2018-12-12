@@ -3,71 +3,99 @@
 // TODO: handle buffering messages and things like backpressure
 
 // includes
-import { EventEmitter } from 'events';
 import net = require('net');
 import split = require('split');
 import { v4 as uuid } from 'uuid';
 import IMessage from './IMessage';
+import {
+    TcpComponent,
+    ITcpComponentOptions,
+    ISendOptions
+} from './TcpComponent';
 
-export interface IPartitionerClientOptions {
+export interface ITcpClientOptions extends ITcpComponentOptions {
     id?: string;
     address?: string;
     port?: number;
-    timeout?: number;
     checkin?: number;
 }
 
-function toInt(value: any, dflt: number) {
-    if (isNaN(value)) return dflt;
-    return parseInt(value, 10);
+export declare interface TcpClient {
+    on(event: 'listen', listener: () => void): this;
+    on(event: 'connect', listener: () => void): this;
+    on(event: 'checkin', listener: () => void): this;
+    on(event: 'disconnect', listener: () => void): this;
+    on(event: 'timeout', listener: () => void): this;
+    on(
+        event: 'data',
+        listener: (payload: any, respond?: (response: any) => void) => void
+    ): this;
+    on(event: 'ack', listener: (msg: IMessage) => void): this;
+    on(
+        event: 'encode',
+        listener: (before: number, after: number) => void
+    ): this;
+    on(event: 'error', listener: (error: Error, module: string) => void): this;
 }
 
 // define server logic
-export default class PartitionerClient extends EventEmitter {
-    public options: IPartitionerClientOptions;
+export class TcpClient extends TcpComponent {
     private socket?: net.Socket;
     private socketIsOpen: boolean = false;
-    private messageId: number = 0;
 
-    public constructor(options?: IPartitionerClientOptions) {
-        super();
+    public constructor(options?: ITcpClientOptions) {
+        super(options);
 
         // options or defaults
         this.options = options || {};
-        this.options.id = this.options.id || uuid();
-        this.options.address = this.options.address || '127.0.0.1';
-        this.options.port = toInt(this.options.port, 8000);
-        this.options.checkin = toInt(this.options.checkin, 10000);
-
-        // if there is a handler, then emit errors, otherwise, throw them
-        this.on('error', error => {
-            // prevents: https://nodejs.org/api/events.html#events_error_events
-            if (this.listenerCount('error') === 1) {
-                setTimeout(() => {
-                    throw error;
-                }, 0);
-            }
-        });
+        if (options) {
+            const local: ITcpClientOptions = this.options;
+            local.port = TcpComponent.toInt(options.port);
+            local.checkin = TcpComponent.toInt(options.checkin);
+        }
 
         // start the timed checkin process
         const checkin = async () => {
-            await this.checkin();
+            await this.checkinToServer();
             setTimeout(() => {
                 checkin();
-            }, this.options.checkin);
+            }, this.checkin);
         };
         checkin();
     }
 
-    public async checkin() {
+    public get id() {
+        const local: ITcpClientOptions = this.options;
+        if (!local.id) local.id = uuid();
+        return local.id;
+    }
+
+    public get address() {
+        const local: ITcpClientOptions = this.options;
+        return local.address || '127.0.0.1';
+    }
+
+    public get port() {
+        const local: ITcpClientOptions = this.options;
+        return local.port || 8000;
+    }
+
+    public get checkin() {
+        const local: ITcpClientOptions = this.options;
+        return local.checkin || 10000;
+    }
+
+    private async checkinToServer() {
         try {
             if (this.socket && this.socketIsOpen) {
-                await this.send(
+                await this.sendToServer(
                     {
-                        cmd: 'checkin',
-                        payload: this.options.id
+                        c: 'checkin',
+                        p: this.id
                     },
-                    true
+                    {
+                        receipt: true
+                    }
                 );
                 this.emit('checkin');
             }
@@ -77,7 +105,16 @@ export default class PartitionerClient extends EventEmitter {
         }
     }
 
+    protected async process(socket: net.Socket, msg: IMessage) {
+        return super.process(socket, msg);
+    }
+
     public connect() {
+        // ensure errors are being trapped
+        if (this.listenerCount('error') < 1) {
+            throw new Error('you must attach at least 1 error listener.');
+        }
+
         // use a new socket
         this.socketIsOpen = false;
         this.socket = new net.Socket();
@@ -89,26 +126,17 @@ export default class PartitionerClient extends EventEmitter {
                 this.emit('connect');
 
                 // pipe input to a stream and break on messages
-                this.socket.setEncoding('utf8');
                 const stream = this.socket.pipe(split());
 
                 // handle messages
                 stream.on('data', data => {
-                    try {
-                        const str = data.toString('utf8');
-                        if (str) {
-                            const msg: IMessage = JSON.parse(str);
-                            if (msg.cmd === 'ack') {
-                                this.emit(`ack:${msg.id}`, msg.payload);
-                            }
-                        }
-                    } catch (error) {
-                        this.emit('error', error, 'data');
+                    if (this.socket) {
+                        this.receive(this.socket, data);
                     }
                 });
 
                 // checkin immediately on connect
-                this.checkin();
+                this.checkinToServer();
             }
         });
 
@@ -149,12 +177,10 @@ export default class PartitionerClient extends EventEmitter {
         // connect to the server immediately
         const connectToServer = () => {
             try {
-                if (!this.options.port) return;
-                if (!this.options.address) return;
                 if (!this.socket) return;
                 this.socket.connect(
-                    this.options.port,
-                    this.options.address
+                    this.port,
+                    this.address
                 );
             } catch (error) {
                 this.emit('error', error, 'connect');
@@ -168,46 +194,15 @@ export default class PartitionerClient extends EventEmitter {
         }, 0);
     }
 
-    public send(msg: IMessage, receipt: boolean = false) {
-        return new Promise<any>((resolve, reject) => {
-            try {
-                if (this.socket && this.socketIsOpen) {
-                    if (receipt) {
-                        this.messageId++;
-                        msg.id = this.messageId;
-                    }
-                    const str = JSON.stringify(msg) + '\n';
-                    this.socket.write(str, () => {
-                        if (receipt) {
-                            // if a receipt was requested, wait for it
-                            const to = setTimeout(() => {
-                                reject(
-                                    new Error(
-                                        `ETIMEOUT: failed to get receipt before timeout.`
-                                    )
-                                );
-                            }, this.options.timeout);
-                            this.once(`ack:${this.messageId}`, payload => {
-                                clearTimeout(to);
-                                resolve(payload);
-                            });
-                        } else {
-                            // if no receipt was requested the send is done
-                            resolve();
-                        }
-                    });
-                } else if (receipt) {
-                    reject(
-                        new Error(
-                            `ENOTOPEN: a receipt was requested but the socket is not open.`
-                        )
-                    );
-                } else {
-                    resolve();
-                }
-            } catch (error) {
-                reject(error);
-            }
-        });
+    private sendToServer(msg: IMessage, options?: ISendOptions) {
+        if (this.socket && this.socketIsOpen) {
+            return this.sendToSocket(this.socket, msg, options);
+        } else if (options && options.receipt) {
+            throw new Error(
+                `ENOTOPEN: a receipt was requested but the socket is not open.`
+            );
+        } else {
+            return Promise.resolve();
+        }
     }
 }

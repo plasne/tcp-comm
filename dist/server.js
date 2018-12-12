@@ -6,15 +6,12 @@ var __importStar = (this && this.__importStar) || function (mod) {
     result["default"] = mod;
     return result;
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 // includes
 const cmd = require("commander");
 const dotenv = require("dotenv");
 const winston = __importStar(require("winston"));
-const TcpServer_1 = __importDefault(require("./TcpServer"));
+const TcpServer_1 = require("./TcpServer");
 // set env
 dotenv.config();
 // define options
@@ -50,12 +47,12 @@ async function setup() {
     try {
         console.log(`LOG_LEVEL is "${LOG_LEVEL}".`);
         // define the connection
-        const server = new TcpServer_1.default({
+        const server = new TcpServer_1.TcpServer({
             port: PORT,
             timeout: TIMEOUT
         })
             .on('listen', () => {
-            logger.info(`listening on port ${server.options.port}.`);
+            logger.info(`listening on port ${server.port}.`);
         })
             .on('connect', (client) => {
             if (client.socket) {
@@ -65,11 +62,47 @@ async function setup() {
                 logger.info(`client "${client.id}" connected.`);
             }
         })
-            .on('checkin', (client) => {
+            .on('checkin', async (client) => {
             logger.info(`client "${client.id}" checked-in.`);
+            try {
+                const response = await server.send(client, [
+                    {
+                        type: 'car',
+                        color: 'red',
+                        number: 29393
+                    },
+                    {
+                        type: 'car',
+                        color: 'blue',
+                        number: 10011
+                    },
+                    {
+                        type: 'car',
+                        color: 'green',
+                        number: 393
+                    }
+                ], {
+                    receipt: true,
+                    encode: true
+                });
+                console.log(`response: ${JSON.stringify(response)}`);
+            }
+            catch (error) {
+                console.error(error);
+            }
         })
             .on('ack', (msg) => {
-            logger.debug(`acknowledged message "${msg.id}".`);
+            logger.debug(`acknowledged message "${msg.i}".`);
+        })
+            .on('encode', (before, after) => {
+            logger.debug(`encoded "${before}" bytes into "${after}" bytes.`);
+        })
+            .on('data', (payload, respond) => {
+            if (respond) {
+                respond({
+                    msg: `here is my response to ${JSON.stringify(payload)}`
+                });
+            }
         })
             .on('disconnect', (client) => {
             if (client) {
@@ -83,15 +116,15 @@ async function setup() {
             logger.info(`client "${client.id}" removed.`);
         })
             .on('timeout', (client) => {
-            logger.info(`client "${client.id}" timed-out (lastCheckIn: ${client.lastCheckin}, now: ${new Date().valueOf()}, timeout: ${server.options.timeout}).`);
+            logger.info(`client "${client.id}" timed-out (lastCheckIn: ${client.lastCheckin}, now: ${new Date().valueOf()}, timeout: ${server.timeout}).`);
         })
             .on('error', (error, module) => {
             logger.error(`there was an error raised in module "${module}"...`);
             logger.error(error.stack ? error.stack : error.message);
         });
         // log settings
-        logger.info(`PORT is "${server.options.port}".`);
-        logger.info(`TIMEOUT is "${server.options.timeout}".`);
+        logger.info(`PORT is "${server.port}".`);
+        logger.info(`TIMEOUT is "${server.timeout}".`);
         // start listening
         server.listen();
     }

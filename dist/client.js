@@ -6,15 +6,12 @@ var __importStar = (this && this.__importStar) || function (mod) {
     result["default"] = mod;
     return result;
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 // includes
 const cmd = require("commander");
 const dotenv = require("dotenv");
 const winston = __importStar(require("winston"));
-const TcpClient_1 = __importDefault(require("./TcpClient"));
+const TcpClient_1 = require("./TcpClient");
 // set env
 dotenv.config();
 // define options
@@ -56,7 +53,7 @@ async function setup() {
     try {
         console.log(`LOG_LEVEL is "${LOG_LEVEL}".`);
         // log the connection
-        const client = new TcpClient_1.default({
+        const client = new TcpClient_1.TcpClient({
             address: ADDRESS,
             checkin: CHECKIN,
             id: CLIENT_ID,
@@ -64,7 +61,17 @@ async function setup() {
             timeout: TIMEOUT
         })
             .on('connect', () => {
-            logger.info(`connected to server at "${client.options.address}:${client.options.port}".`);
+            logger.info(`connected to server at "${client.address}:${client.port}".`);
+        })
+            .on('encode', (before, after) => {
+            logger.debug(`encoded "${before}" bytes into "${after}" bytes.`);
+        })
+            .on('data', (payload, respond) => {
+            if (respond) {
+                respond({
+                    msg: `here is my response to ${JSON.stringify(payload)}`
+                });
+            }
         })
             .on('timeout', () => {
             logger.info('connection timed-out.');
@@ -80,11 +87,11 @@ async function setup() {
             logger.error(error.stack ? error.stack : error.message);
         });
         // log settings
-        logger.info(`ID is "${client.options.id}".`);
-        logger.info(`ADDRESS is "${client.options.address}".`);
-        logger.info(`PORT is "${client.options.port}".`);
-        logger.info(`TIMEOUT is "${client.options.timeout}".`);
-        logger.info(`CHECKIN is "${client.options.checkin}".`);
+        logger.info(`ID is "${client.id}".`);
+        logger.info(`ADDRESS is "${client.address}".`);
+        logger.info(`PORT is "${client.port}".`);
+        logger.info(`TIMEOUT is "${client.timeout}".`);
+        logger.info(`CHECKIN is "${client.checkin}".`);
         // connect
         client.connect();
     }

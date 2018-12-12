@@ -3,7 +3,7 @@ import cmd = require('commander');
 import dotenv = require('dotenv');
 import * as winston from 'winston';
 import IMessage from './IMessage';
-import TcpServer, { IClient } from './TcpServer';
+import { TcpServer, IClient } from './TcpServer';
 
 // set env
 dotenv.config();
@@ -69,7 +69,7 @@ async function setup() {
             timeout: TIMEOUT
         })
             .on('listen', () => {
-                logger.info(`listening on port ${server.options.port}.`);
+                logger.info(`listening on port ${server.port}.`);
             })
             .on('connect', (client: IClient) => {
                 if (client.socket) {
@@ -82,11 +82,23 @@ async function setup() {
                     logger.info(`client "${client.id}" connected.`);
                 }
             })
-            .on('checkin', (client: IClient) => {
+            .on('checkin', async (client: IClient) => {
                 logger.info(`client "${client.id}" checked-in.`);
             })
             .on('ack', (msg: IMessage) => {
-                logger.debug(`acknowledged message "${msg.id}".`);
+                logger.debug(`acknowledged message "${msg.i}".`);
+            })
+            .on('encode', (before: number, after: number) => {
+                logger.debug(
+                    `encoded "${before}" bytes into "${after}" bytes.`
+                );
+            })
+            .on('data', (payload: any, respond?: (response: any) => void) => {
+                if (respond) {
+                    respond({
+                        msg: `here is my response to ${JSON.stringify(payload)}`
+                    });
+                }
             })
             .on('disconnect', (client?: IClient) => {
                 if (client) {
@@ -103,7 +115,7 @@ async function setup() {
                     `client "${client.id}" timed-out (lastCheckIn: ${
                         client.lastCheckin
                     }, now: ${new Date().valueOf()}, timeout: ${
-                        server.options.timeout
+                        server.timeout
                     }).`
                 );
             })
@@ -115,8 +127,8 @@ async function setup() {
             });
 
         // log settings
-        logger.info(`PORT is "${server.options.port}".`);
-        logger.info(`TIMEOUT is "${server.options.timeout}".`);
+        logger.info(`PORT is "${server.port}".`);
+        logger.info(`TIMEOUT is "${server.timeout}".`);
 
         // start listening
         server.listen();

@@ -2,7 +2,7 @@
 import cmd = require('commander');
 import dotenv = require('dotenv');
 import * as winston from 'winston';
-import TcpClient from './TcpClient';
+import { TcpClient } from './TcpClient';
 
 // set env
 dotenv.config();
@@ -88,10 +88,20 @@ async function setup() {
         })
             .on('connect', () => {
                 logger.info(
-                    `connected to server at "${client.options.address}:${
-                        client.options.port
-                    }".`
+                    `connected to server at "${client.address}:${client.port}".`
                 );
+            })
+            .on('encode', (before: number, after: number) => {
+                logger.debug(
+                    `encoded "${before}" bytes into "${after}" bytes.`
+                );
+            })
+            .on('data', (payload: any, respond?: (response: any) => void) => {
+                if (respond) {
+                    respond({
+                        msg: `here is my response to ${JSON.stringify(payload)}`
+                    });
+                }
             })
             .on('timeout', () => {
                 logger.info('connection timed-out.');
@@ -110,11 +120,11 @@ async function setup() {
             });
 
         // log settings
-        logger.info(`ID is "${client.options.id}".`);
-        logger.info(`ADDRESS is "${client.options.address}".`);
-        logger.info(`PORT is "${client.options.port}".`);
-        logger.info(`TIMEOUT is "${client.options.timeout}".`);
-        logger.info(`CHECKIN is "${client.options.checkin}".`);
+        logger.info(`ID is "${client.id}".`);
+        logger.info(`ADDRESS is "${client.address}".`);
+        logger.info(`PORT is "${client.port}".`);
+        logger.info(`TIMEOUT is "${client.timeout}".`);
+        logger.info(`CHECKIN is "${client.checkin}".`);
 
         // connect
         client.connect();

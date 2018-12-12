@@ -2,14 +2,17 @@
 // TODO: need to document stuff better
 
 // includes
-import { EventEmitter } from 'events';
 import net = require('net');
 import split = require('split');
 import IMessage from './IMessage';
+import {
+    TcpComponent,
+    ITcpComponentOptions,
+    ISendOptions
+} from './TcpComponent';
 
-export interface ITcpServerOptions {
+export interface ITcpServerOptions extends ITcpComponentOptions {
     port?: number;
-    timeout?: number;
 }
 
 export interface IClient {
@@ -18,95 +21,89 @@ export interface IClient {
     lastCheckin?: number;
 }
 
-function toInt(value: any, dflt: number) {
-    if (isNaN(value)) return dflt;
-    return parseInt(value, 10);
+export declare interface TcpServer {
+    on(event: 'listen', listener: () => void): this;
+    on(event: 'connect', listener: (client: IClient) => void): this;
+    on(event: 'checkin', listener: (client: IClient) => void): this;
+    on(event: 'disconnect', listener: (client?: IClient) => void): this;
+    on(event: 'remove', listener: (client: IClient) => void): this;
+    on(event: 'timeout', listener: (client: IClient) => void): this;
+    on(
+        event: 'data',
+        listener: (payload: any, respond?: (response: any) => void) => void
+    ): this;
+    on(event: 'ack', listener: (msg: IMessage) => void): this;
+    on(
+        event: 'encode',
+        listener: (before: number, after: number) => void
+    ): this;
+    on(event: 'error', listener: (error: Error, module: string) => void): this;
 }
 
 // define server logic
-export default class TcpServer extends EventEmitter {
-    public options: ITcpServerOptions;
+export class TcpServer extends TcpComponent {
     public clients: IClient[] = [];
 
     public constructor(options?: ITcpServerOptions) {
-        super();
+        super(options);
 
         // options or defaults
         this.options = options || {};
-        this.options.port = toInt(this.options.port, 8000);
-        this.options.timeout = toInt(this.options.timeout, 30000);
+        if (options) {
+            const local: ITcpServerOptions = this.options;
+            local.port = TcpComponent.toInt(options.port);
+        }
+    }
 
-        // if there is a handler, then emit errors, otherwise, throw them
-        this.on('error', error => {
-            // prevents: https://nodejs.org/api/events.html#events_error_events
-            if (this.listenerCount('error') === 1) {
-                setTimeout(() => {
-                    console.error('got here!!!!');
-                    throw error;
-                }, 0);
-            }
-        });
+    public get port() {
+        const local: ITcpServerOptions = this.options;
+        return local.port || 8000;
+    }
+
+    protected async process(socket: net.Socket, msg: IMessage) {
+        switch (msg.c) {
+            case 'checkin':
+                let client = this.clients.find(c => c.id === msg.p);
+                let isNew = false;
+                if (client) {
+                    client.lastCheckin = new Date().valueOf();
+                    if (!client.socket || client.socket !== socket) {
+                        if (client.socket) client.socket.end();
+                        client.socket = socket;
+                        isNew = true;
+                    }
+                } else {
+                    client = {
+                        id: msg.p,
+                        lastCheckin: new Date().valueOf(),
+                        socket
+                    };
+                    this.clients.push(client);
+                    isNew = true;
+                }
+                if (isNew) {
+                    this.emit('connect', client);
+                }
+                this.emit('checkin', client);
+                break;
+        }
+        return super.process(socket, msg);
     }
 
     public listen() {
+        // ensure errors are being trapped
+        if (this.listenerCount('error') < 1) {
+            throw new Error('you must attach at least 1 error listener.');
+        }
+
         // start listening for TCP
         net.createServer(socket => {
             // pipe input to a stream and break on messages
-            socket.setEncoding('utf8');
             const stream = socket.pipe(split());
 
             // handle messages
             stream.on('data', data => {
-                try {
-                    const str = data.toString('utf8');
-                    if (str) {
-                        const msg: IMessage = JSON.parse(str);
-
-                        // process the message types
-                        switch (msg.cmd) {
-                            case 'checkin':
-                                let client = this.clients.find(
-                                    c => c.id === msg.payload
-                                );
-                                let isNew = false;
-                                if (client) {
-                                    client.lastCheckin = new Date().valueOf();
-                                    if (
-                                        !client.socket ||
-                                        client.socket !== socket
-                                    ) {
-                                        if (client.socket) client.socket.end();
-                                        client.socket = socket;
-                                        isNew = true;
-                                    }
-                                } else {
-                                    client = {
-                                        id: msg.payload,
-                                        lastCheckin: new Date().valueOf(),
-                                        socket
-                                    };
-                                    this.clients.push(client);
-                                    isNew = true;
-                                }
-                                if (isNew) {
-                                    this.emit('connect', client);
-                                }
-                                this.emit('checkin', client);
-                                break;
-                        }
-
-                        // send ack if appropriate
-                        if (msg.cmd !== 'ack' && msg.id) {
-                            this.emit('ack', msg);
-                            this.send(socket, {
-                                cmd: 'ack',
-                                id: msg.id
-                            });
-                        }
-                    }
-                } catch (error) {
-                    this.emit('error', error, 'data');
-                }
+                this.receive(socket, data);
             });
 
             // handle timeouts
@@ -131,12 +128,40 @@ export default class TcpServer extends EventEmitter {
                     this.emit('disconnect');
                 }
             });
-        }).listen(this.options.port, () => {
+        }).listen(this.port, () => {
             this.emit('listen');
         });
     }
 
-    public broadcast(msg: IMessage) {
+    private sendToClient(
+        client: IClient,
+        msg: IMessage,
+        options?: ISendOptions
+    ) {
+        if (client.socket) {
+            return this.sendToSocket(client.socket, msg, options);
+        } else if (options && options.receipt) {
+            throw new Error(
+                `ENOTOPEN: a receipt was requested but the socket is not open.`
+            );
+        } else {
+            return Promise.resolve();
+        }
+    }
+
+    public send(client: IClient, payload: any, options?: ISendOptions) {
+        return this.sendToClient(
+            client,
+            {
+                c: 'data',
+                p: payload
+            },
+            options
+        );
+    }
+
+    /*
+    private broadcast(msg: IMessage) {
         const promises: Array<Promise<void>> = [];
         for (const client of this.clients) {
             if (client.socket) {
@@ -146,17 +171,5 @@ export default class TcpServer extends EventEmitter {
         }
         return Promise.all(promises);
     }
-
-    private send(socket: net.Socket, msg: IMessage) {
-        return new Promise<void>((resolve, reject) => {
-            try {
-                const s = JSON.stringify(msg) + '\n';
-                socket.write(s, () => {
-                    resolve();
-                });
-            } catch (error) {
-                reject(error);
-            }
-        });
-    }
+    */
 }

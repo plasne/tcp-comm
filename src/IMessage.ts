@@ -1,5 +1,6 @@
 export default interface IMessage {
-    id?: number;
-    cmd: string;
-    payload?: any;
+    i?: number; // messageId for receipt
+    c: string; // command
+    p?: any; // payload
+    e?: number; // is encoded?
 }

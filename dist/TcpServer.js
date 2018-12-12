@@ -3,89 +3,68 @@
 // TODO: need to document stuff better
 Object.defineProperty(exports, "__esModule", { value: true });
 // includes
-const events_1 = require("events");
 const net = require("net");
 const split = require("split");
-function toInt(value, dflt) {
-    if (isNaN(value))
-        return dflt;
-    return parseInt(value, 10);
-}
+const TcpComponent_1 = require("./TcpComponent");
 // define server logic
-class TcpServer extends events_1.EventEmitter {
+class TcpServer extends TcpComponent_1.TcpComponent {
     constructor(options) {
-        super();
+        super(options);
         this.clients = [];
         // options or defaults
         this.options = options || {};
-        this.options.port = toInt(this.options.port, 8000);
-        this.options.timeout = toInt(this.options.timeout, 30000);
-        // if there is a handler, then emit errors, otherwise, throw them
-        this.on('error', error => {
-            // prevents: https://nodejs.org/api/events.html#events_error_events
-            if (this.listenerCount('error') === 1) {
-                setTimeout(() => {
-                    console.error('got here!!!!');
-                    throw error;
-                }, 0);
-            }
-        });
+        if (options) {
+            const local = this.options;
+            local.port = TcpComponent_1.TcpComponent.toInt(options.port);
+        }
+    }
+    get port() {
+        const local = this.options;
+        return local.port || 8000;
+    }
+    async process(socket, msg) {
+        switch (msg.c) {
+            case 'checkin':
+                let client = this.clients.find(c => c.id === msg.p);
+                let isNew = false;
+                if (client) {
+                    client.lastCheckin = new Date().valueOf();
+                    if (!client.socket || client.socket !== socket) {
+                        if (client.socket)
+                            client.socket.end();
+                        client.socket = socket;
+                        isNew = true;
+                    }
+                }
+                else {
+                    client = {
+                        id: msg.p,
+                        lastCheckin: new Date().valueOf(),
+                        socket
+                    };
+                    this.clients.push(client);
+                    isNew = true;
+                }
+                if (isNew) {
+                    this.emit('connect', client);
+                }
+                this.emit('checkin', client);
+                break;
+        }
+        return super.process(socket, msg);
     }
     listen() {
+        // ensure errors are being trapped
+        if (this.listenerCount('error') < 1) {
+            throw new Error('you must attach at least 1 error listener.');
+        }
         // start listening for TCP
         net.createServer(socket => {
             // pipe input to a stream and break on messages
-            socket.setEncoding('utf8');
             const stream = socket.pipe(split());
             // handle messages
             stream.on('data', data => {
-                try {
-                    const str = data.toString('utf8');
-                    if (str) {
-                        const msg = JSON.parse(str);
-                        // process the message types
-                        switch (msg.cmd) {
-                            case 'checkin':
-                                let client = this.clients.find(c => c.id === msg.payload);
-                                let isNew = false;
-                                if (client) {
-                                    client.lastCheckin = new Date().valueOf();
-                                    if (!client.socket ||
-                                        client.socket !== socket) {
-                                        if (client.socket)
-                                            client.socket.end();
-                                        client.socket = socket;
-                                        isNew = true;
-                                    }
-                                }
-                                else {
-                                    client = {
-                                        id: msg.payload,
-                                        lastCheckin: new Date().valueOf(),
-                                        socket
-                                    };
-                                    this.clients.push(client);
-                                    isNew = true;
-                                }
-                                if (isNew) {
-                                    this.emit('connect', client);
-                                }
-                                this.emit('checkin', client);
-                                break;
-                        }
-                        // send ack if appropriate
-                        if (msg.cmd !== 'ack' && msg.id) {
-                            this.emit('ack', msg);
-                            this.send(socket, {
-                                cmd: 'ack',
-                                id: msg.id
-                            });
-                        }
-                    }
-                }
-                catch (error) {
-                    this.emit('error', error, 'data');
-                }
+                this.receive(socket, data);
             });
             // handle timeouts
             if (this.options.timeout) {
@@ -110,32 +89,26 @@ class TcpServer extends events_1.EventEmitter {
                     this.emit('disconnect');
                 }
             });
-        }).listen(this.options.port, () => {
+        }).listen(this.port, () => {
             this.emit('listen');
         });
     }
-    broadcast(msg) {
-        const promises = [];
-        for (const client of this.clients) {
-            if (client.socket) {
-                const promise = this.send(client.socket, msg);
-                promises.push(promise);
-            }
+    sendToClient(client, msg, options) {
+        if (client.socket) {
+            return this.sendToSocket(client.socket, msg, options);
         }
-        return Promise.all(promises);
+        else if (options && options.receipt) {
+            throw new Error(`ENOTOPEN: a receipt was requested but the socket is not open.`);
+        }
+        else {
+            return Promise.resolve();
+        }
     }
-    send(socket, msg) {
-        return new Promise((resolve, reject) => {
-            try {
-                const s = JSON.stringify(msg) + '\n';
-                socket.write(s, () => {
-                    resolve();
-                });
-            }
-            catch (error) {
-                reject(error);
-            }
-        });
+    send(client, payload, options) {
+        return this.sendToClient(client, {
+            c: 'data',
+            p: payload
+        }, options);
     }
 }
-exports.default = TcpServer;
+exports.TcpServer = TcpServer;
