@@ -36,22 +36,20 @@ export abstract class TcpComponent extends EventEmitter {
 
     protected async process(_: net.Socket, msg: IMessage) {
         switch (msg.c) {
-            case 'data':
-                if (this.listenerCount('data') < 1) {
-                    this.emit('data', msg.p);
+            default:
+                const eid = msg.c === 'data' ? 'data' : `cmd:${msg.c}`;
+                if (this.listenerCount(eid) < 1) {
+                    // don't bother to emit
                 } else if (msg.i) {
                     return new Promise<any>(resolve => {
                         const respond = (response: any) => {
                             resolve(response);
                         };
-                        this.emit('data', msg.p, respond);
+                        this.emit(eid, msg.p, respond);
                     });
                 } else {
-                    this.emit('data', msg.p);
+                    this.emit(eid, msg.p);
                 }
-                break;
-            default:
-                this.emit(`cmd:${msg.c}`, msg.p);
                 break;
         }
     }

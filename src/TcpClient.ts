@@ -169,11 +169,25 @@ export class TcpClient extends TcpComponent {
         }, 0);
     }
 
+    public sendCommand(cmd: string, payload: any, options?: ISendOptions) {
+        const used: string[] = ['data', 'checkin'];
+        if (used.includes(cmd)) {
+            throw new Error(`command "${cmd}" is a reserved keyword.`);
+        }
+        return this.sendToServer(
+            {
+                c: cmd,
+                p: payload
+            },
+            options
+        );
+    }
+
     protected async process(socket: net.Socket, msg: IMessage) {
         return super.process(socket, msg);
     }
 
-    private sendToServer(msg: IMessage, options?: ISendOptions) {
+    protected sendToServer(msg: IMessage, options?: ISendOptions) {
         if (this.socket && this.socketIsOpen) {
             return this.sendToSocket(this.socket, msg, options);
         } else if (options && options.receipt) {

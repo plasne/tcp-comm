@@ -117,6 +117,26 @@ export class TcpServer extends TcpComponent {
         );
     }
 
+    public sendCommand(
+        client: IClient,
+        cmd: string,
+        payload: any,
+        options?: ISendOptions
+    ) {
+        const used: string[] = ['data', 'checkin'];
+        if (used.includes(cmd)) {
+            throw new Error(`command "${cmd}" is a reserved keyword.`);
+        }
+        return this.send(
+            client,
+            {
+                c: cmd,
+                p: payload
+            },
+            options
+        );
+    }
+
     public add(client: IClient) {
         this.clients.push(client);
         this.emit('add', client);
@@ -158,7 +178,7 @@ export class TcpServer extends TcpComponent {
         return super.process(socket, msg);
     }
 
-    private sendToClient(
+    protected sendToClient(
         client: IClient,
         msg: IMessage,
         options?: ISendOptions
