@@ -1,4 +1,3 @@
-// TODO: needs to support committing checkpoints to some kind of state
 // TODO: need to document stuff better
 
 // includes
@@ -23,6 +22,7 @@ export interface IClient {
 
 /* tslint:disable */
 export declare interface TcpServer {
+    on(event: string, listener: (...args) => void): this;
     on(event: 'listen', listener: () => void): this;
     on(event: 'connect', listener: (client: IClient) => void): this;
     on(event: 'checkin', listener: (client: IClient) => void): this;

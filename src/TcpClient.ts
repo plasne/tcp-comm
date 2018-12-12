@@ -1,7 +1,3 @@
-// TODO: provide a tunnel to dispatch messages
-// TODO: needs to handle reconnects
-// TODO: handle buffering messages and things like backpressure
-
 // includes
 import net = require('net');
 import split = require('split');
@@ -22,6 +18,7 @@ export interface ITcpClientOptions extends ITcpComponentOptions {
 
 /* tslint:disable */
 export declare interface TcpClient {
+    on(event: string, listener: (...args) => void): this;
     on(event: 'listen', listener: () => void): this;
     on(event: 'connect', listener: () => void): this;
     on(event: 'checkin', listener: () => void): this;

@@ -50,6 +50,9 @@ export abstract class TcpComponent extends EventEmitter {
                     this.emit('data', msg.p);
                 }
                 break;
+            default:
+                this.emit(`cmd:${msg.c}`, msg.p);
+                break;
         }
     }
 
