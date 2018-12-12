@@ -34,7 +34,7 @@ export declare interface TcpServer {
         event: 'data',
         listener: (payload: any, respond?: (response?: any) => void) => void
     ): this;
-    on(event: 'ack', listener: (msg: IMessage) => void): this;
+    on(event: 'ack', listener: (ack: IMessage, msg: IMessage) => void): this;
     on(
         event: 'encode',
         listener: (before: number, after: number) => void

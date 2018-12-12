@@ -77,7 +77,7 @@ export abstract class TcpComponent extends EventEmitter {
                                     p: response
                                 };
                                 this.sendToSocket(socket, ack);
-                                this.emit('ack', ack);
+                                this.emit('ack', ack, msg);
                             }
                             break;
                     }

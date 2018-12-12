@@ -138,7 +138,7 @@ var TcpComponent = /** @class */ (function (_super) {
                                         p: response
                                     };
                                     this.sendToSocket(socket, ack);
-                                    this.emit('ack', ack);
+                                    this.emit('ack', ack, msg_1);
                                 }
                                 return [3 /*break*/, 4];
                             case 4: return [2 /*return*/];
