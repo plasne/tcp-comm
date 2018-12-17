@@ -30,7 +30,7 @@ export declare class TcpClient extends TcpComponent {
     readonly checkin: number;
     connect(): void;
     sendCommand(cmd: string, payload: any, options?: ISendOptions): Promise<any>;
-    protected process(socket: net.Socket, msg: IMessage): Promise<any>;
+    protected process(_: net.Socket, msg: IMessage): Promise<any>;
     protected sendToServer(msg: IMessage, options?: ISendOptions): Promise<any>;
     private checkinToServer;
 }

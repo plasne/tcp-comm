@@ -24,7 +24,11 @@ export interface IClient {
 export declare interface TcpServer {
     on(
         event: string,
-        listener: (payload: any, respond?: (response?: any) => void) => void
+        listener: (
+            client: IClient,
+            payload: any,
+            respond?: (response?: any) => void
+        ) => void
     ): this;
     on(event: 'listen', listener: () => void): this;
     on(event: 'connect', listener: (client: IClient) => void): this;
@@ -35,7 +39,11 @@ export declare interface TcpServer {
     on(event: 'timeout', listener: (client: IClient) => void): this;
     on(
         event: 'data',
-        listener: (payload: any, respond?: (response?: any) => void) => void
+        listener: (
+            client: IClient,
+            payload: any,
+            respond?: (response?: any) => void
+        ) => void
     ): this;
     on(event: 'ack', listener: (ack: IMessage, msg: IMessage) => void): this;
     on(
@@ -153,7 +161,7 @@ export class TcpServer extends TcpComponent {
 
     protected async process(socket: net.Socket, msg: IMessage) {
         switch (msg.c) {
-            case 'checkin':
+            case 'checkin': {
                 let client = this.clients.find(c => c.id === msg.p);
                 let isNew = false;
                 if (client) {
@@ -177,8 +185,25 @@ export class TcpServer extends TcpComponent {
                 }
                 this.emit('checkin', client);
                 break;
+            }
+            default: {
+                const client = this.clients.find(c => c.socket === socket);
+                const eid = msg.c === 'data' ? 'data' : `cmd:${msg.c}`;
+                if (this.listenerCount(eid) < 1) {
+                    // don't bother to emit
+                } else if (msg.i) {
+                    return new Promise<any>(resolve => {
+                        const respond = (response: any) => {
+                            resolve(response);
+                        };
+                        this.emit(eid, client, msg.p, respond);
+                    });
+                } else {
+                    this.emit(eid, client, msg.p);
+                }
+                break;
+            }
         }
-        return super.process(socket, msg);
     }
 
     protected sendToClient(

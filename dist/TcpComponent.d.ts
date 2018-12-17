@@ -15,7 +15,7 @@ export declare abstract class TcpComponent extends EventEmitter {
     private messageId;
     constructor(options?: ITcpComponentOptions);
     readonly timeout: number;
-    protected process(_: net.Socket, msg: IMessage): Promise<any>;
+    protected abstract process(socket: net.Socket, msg: IMessage): Promise<any>;
     protected receive(socket: net.Socket, data: any): void;
     protected sendToSocket(socket: net.Socket, msg: IMessage, options?: ISendOptions): Promise<any>;
 }

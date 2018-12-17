@@ -202,10 +202,31 @@ var TcpClient = /** @class */ (function (_super) {
             p: payload
         }, options);
     };
-    TcpClient.prototype.process = function (socket, msg) {
+    TcpClient.prototype.process = function (_, msg) {
         return __awaiter(this, void 0, void 0, function () {
+            var eid_1;
+            var _this = this;
             return __generator(this, function (_a) {
-                return [2 /*return*/, _super.prototype.process.call(this, socket, msg)];
+                switch (msg.c) {
+                    default:
+                        eid_1 = msg.c === 'data' ? 'data' : "cmd:" + msg.c;
+                        if (this.listenerCount(eid_1) < 1) {
+                            // don't bother to emit
+                        }
+                        else if (msg.i) {
+                            return [2 /*return*/, new Promise(function (resolve) {
+                                    var respond = function (response) {
+                                        resolve(response);
+                                    };
+                                    _this.emit(eid_1, msg.p, respond);
+                                })];
+                        }
+                        else {
+                            this.emit(eid_1, msg.p);
+                        }
+                        break;
+                }
+                return [2 /*return*/];
             });
         });
     };

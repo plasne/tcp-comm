@@ -145,10 +145,11 @@ var TcpServer = /** @class */ (function (_super) {
     };
     TcpServer.prototype.process = function (socket, msg) {
         return __awaiter(this, void 0, void 0, function () {
-            var client, isNew;
+            var client, isNew, client_1, eid_1;
+            var _this = this;
             return __generator(this, function (_a) {
                 switch (msg.c) {
-                    case 'checkin':
+                    case 'checkin': {
                         client = this.clients.find(function (c) { return c.id === msg.p; });
                         isNew = false;
                         if (client) {
@@ -174,8 +175,28 @@ var TcpServer = /** @class */ (function (_super) {
                         }
                         this.emit('checkin', client);
                         break;
+                    }
+                    default: {
+                        client_1 = this.clients.find(function (c) { return c.socket === socket; });
+                        eid_1 = msg.c === 'data' ? 'data' : "cmd:" + msg.c;
+                        if (this.listenerCount(eid_1) < 1) {
+                            // don't bother to emit
+                        }
+                        else if (msg.i) {
+                            return [2 /*return*/, new Promise(function (resolve) {
+                                    var respond = function (response) {
+                                        resolve(response);
+                                    };
+                                    _this.emit(eid_1, client_1, msg.p, respond);
+                                })];
+                        }
+                        else {
+                            this.emit(eid_1, client_1, msg.p);
+                        }
+                        break;
+                    }
                 }
-                return [2 /*return*/, _super.prototype.process.call(this, socket, msg)];
+                return [2 /*return*/];
             });
         });
     };

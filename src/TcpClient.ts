@@ -186,8 +186,24 @@ export class TcpClient extends TcpComponent {
         );
     }
 
-    protected async process(socket: net.Socket, msg: IMessage) {
-        return super.process(socket, msg);
+    protected async process(_: net.Socket, msg: IMessage) {
+        switch (msg.c) {
+            default:
+                const eid = msg.c === 'data' ? 'data' : `cmd:${msg.c}`;
+                if (this.listenerCount(eid) < 1) {
+                    // don't bother to emit
+                } else if (msg.i) {
+                    return new Promise<any>(resolve => {
+                        const respond = (response: any) => {
+                            resolve(response);
+                        };
+                        this.emit(eid, msg.p, respond);
+                    });
+                } else {
+                    this.emit(eid, msg.p);
+                }
+                break;
+        }
     }
 
     protected sendToServer(msg: IMessage, options?: ISendOptions) {
