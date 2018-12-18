@@ -31,8 +31,14 @@ export declare interface TcpServer {
         ) => void
     ): this;
     on(event: 'listen', listener: () => void): this;
-    on(event: 'connect', listener: (client: IClient) => void): this;
-    on(event: 'checkin', listener: (client: IClient) => void): this;
+    on(
+        event: 'connect',
+        listener: (client: IClient, metadata: any) => void
+    ): this;
+    on(
+        event: 'checkin',
+        listener: (client: IClient, metadata: any) => void
+    ): this;
     on(event: 'disconnect', listener: (client?: IClient) => void): this;
     on(event: 'add', listener: (client: IClient) => void): this;
     on(event: 'remove', listener: (client: IClient) => void): this;
@@ -162,7 +168,8 @@ export class TcpServer extends TcpComponent {
     protected async process(socket: net.Socket, msg: IMessage) {
         switch (msg.c) {
             case 'checkin': {
-                let client = this.clients.find(c => c.id === msg.p);
+                const payload: IClient = msg.p;
+                let client = this.clients.find(c => c.id === payload.id);
                 let isNew = false;
                 if (client) {
                     client.lastCheckin = new Date().valueOf();
@@ -173,7 +180,7 @@ export class TcpServer extends TcpComponent {
                     }
                 } else {
                     client = {
-                        id: msg.p,
+                        id: payload.id,
                         lastCheckin: new Date().valueOf(),
                         socket
                     };
@@ -181,9 +188,9 @@ export class TcpServer extends TcpComponent {
                     isNew = true;
                 }
                 if (isNew) {
-                    this.emit('connect', client);
+                    this.emit('connect', client, payload);
                 }
-                this.emit('checkin', client);
+                this.emit('checkin', client, payload);
                 break;
             }
             default: {

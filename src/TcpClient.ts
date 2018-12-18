@@ -11,6 +11,7 @@ import {
 
 export interface ITcpClientOptions extends ITcpComponentOptions {
     id?: string;
+    metadata?: any;
     address?: string;
     port?: number;
     checkin?: number;
@@ -57,6 +58,7 @@ export class TcpClient extends TcpComponent {
         }
 
         // start the timed checkin process
+        //  NOTE: for now, metadata is only sent at connect
         const checkin = async () => {
             await this.checkinToServer();
             setTimeout(() => {
@@ -70,6 +72,11 @@ export class TcpClient extends TcpComponent {
         const local: ITcpClientOptions = this.options;
         if (!local.id) local.id = uuid();
         return local.id;
+    }
+
+    public get metadata() {
+        const local: ITcpClientOptions = this.options;
+        return local.metadata;
     }
 
     public get address() {
@@ -114,7 +121,7 @@ export class TcpClient extends TcpComponent {
                 });
 
                 // checkin immediately on connect
-                this.checkinToServer();
+                this.checkinToServer(this.metadata);
             }
         });
 
@@ -218,13 +225,15 @@ export class TcpClient extends TcpComponent {
         }
     }
 
-    private async checkinToServer() {
+    private async checkinToServer(payload?: any) {
         try {
             if (this.socket && this.socketIsOpen) {
+                payload = payload || {};
+                if (!payload.id) payload.id = this.id;
                 await this.sendToServer(
                     {
                         c: 'checkin',
-                        p: this.id
+                        p: payload
                     },
                     {
                         receipt: true
