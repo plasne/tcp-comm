@@ -145,12 +145,13 @@ var TcpServer = /** @class */ (function (_super) {
     };
     TcpServer.prototype.process = function (socket, msg) {
         return __awaiter(this, void 0, void 0, function () {
-            var client, isNew, client_1, eid_1;
+            var payload_1, client, isNew, client_1, eid_1;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (msg.c) {
                     case 'checkin': {
-                        client = this.clients.find(function (c) { return c.id === msg.p; });
+                        payload_1 = msg.p;
+                        client = this.clients.find(function (c) { return c.id === payload_1.id; });
                         isNew = false;
                         if (client) {
                             client.lastCheckin = new Date().valueOf();
@@ -163,7 +164,7 @@ var TcpServer = /** @class */ (function (_super) {
                         }
                         else {
                             client = {
-                                id: msg.p,
+                                id: payload_1.id,
                                 lastCheckin: new Date().valueOf(),
                                 socket: socket
                             };
@@ -171,9 +172,9 @@ var TcpServer = /** @class */ (function (_super) {
                             isNew = true;
                         }
                         if (isNew) {
-                            this.emit('connect', client);
+                            this.emit('connect', client, payload_1);
                         }
-                        this.emit('checkin', client);
+                        this.emit('checkin', client, payload_1);
                         break;
                     }
                     default: {

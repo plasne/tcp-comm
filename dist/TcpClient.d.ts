@@ -4,6 +4,7 @@ import IMessage from './IMessage';
 import { ISendOptions, ITcpComponentOptions, TcpComponent } from './TcpComponent';
 export interface ITcpClientOptions extends ITcpComponentOptions {
     id?: string;
+    metadata?: any;
     address?: string;
     port?: number;
     checkin?: number;
@@ -25,6 +26,7 @@ export declare class TcpClient extends TcpComponent {
     private socketIsOpen;
     constructor(options?: ITcpClientOptions);
     readonly id: string;
+    readonly metadata: any;
     readonly address: string;
     readonly port: number;
     readonly checkin: number;

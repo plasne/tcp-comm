@@ -68,6 +68,7 @@ var TcpClient = /** @class */ (function (_super) {
             local.checkin = TcpComponent_1.TcpComponent.toInt(local.checkin);
         }
         // start the timed checkin process
+        //  NOTE: for now, metadata is only sent at connect
         var checkin = function () { return __awaiter(_this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
@@ -90,6 +91,14 @@ var TcpClient = /** @class */ (function (_super) {
             if (!local.id)
                 local.id = uuid_1.v4();
             return local.id;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(TcpClient.prototype, "metadata", {
+        get: function () {
+            var local = this.options;
+            return local.metadata;
         },
         enumerable: true,
         configurable: true
@@ -141,7 +150,7 @@ var TcpClient = /** @class */ (function (_super) {
                     }
                 });
                 // checkin immediately on connect
-                _this.checkinToServer();
+                _this.checkinToServer(_this.metadata);
             }
         });
         // handle timeouts
@@ -241,7 +250,7 @@ var TcpClient = /** @class */ (function (_super) {
             return Promise.resolve();
         }
     };
-    TcpClient.prototype.checkinToServer = function () {
+    TcpClient.prototype.checkinToServer = function (payload) {
         return __awaiter(this, void 0, void 0, function () {
             var error_1;
             return __generator(this, function (_a) {
@@ -249,9 +258,12 @@ var TcpClient = /** @class */ (function (_super) {
                     case 0:
                         _a.trys.push([0, 3, , 4]);
                         if (!(this.socket && this.socketIsOpen)) return [3 /*break*/, 2];
+                        payload = payload || {};
+                        if (!payload.id)
+                            payload.id = this.id;
                         return [4 /*yield*/, this.sendToServer({
                                 c: 'checkin',
-                                p: this.id
+                                p: payload
                             }, {
                                 receipt: true
                             })];

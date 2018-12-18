@@ -13,8 +13,8 @@ export interface IClient {
 export declare interface TcpServer {
     on(event: string, listener: (client: IClient, payload: any, respond?: (response?: any) => void) => void): this;
     on(event: 'listen', listener: () => void): this;
-    on(event: 'connect', listener: (client: IClient) => void): this;
-    on(event: 'checkin', listener: (client: IClient) => void): this;
+    on(event: 'connect', listener: (client: IClient, metadata: any) => void): this;
+    on(event: 'checkin', listener: (client: IClient, metadata: any) => void): this;
     on(event: 'disconnect', listener: (client?: IClient) => void): this;
     on(event: 'add', listener: (client: IClient) => void): this;
     on(event: 'remove', listener: (client: IClient) => void): this;
