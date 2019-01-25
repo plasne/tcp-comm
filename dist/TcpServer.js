@@ -117,21 +117,25 @@ var TcpServer = /** @class */ (function (_super) {
             _this.emit('listen');
         });
     };
-    TcpServer.prototype.send = function (client, payload, options) {
-        return this.sendToClient(client, {
-            c: 'data',
-            p: payload
-        }, options);
-    };
-    TcpServer.prototype.sendCommand = function (client, cmd, payload, options) {
-        var used = ['data', 'checkin'];
-        if (used.includes(cmd)) {
-            throw new Error("command \"" + cmd + "\" is a reserved keyword.");
+    TcpServer.prototype.tell = function (client, cmd, payload, options) {
+        if (cmd) {
+            var used = ['data', 'checkin'];
+            if (used.includes(cmd)) {
+                throw new Error("command \"" + cmd + "\" is a reserved keyword.");
+            }
+        }
+        else {
+            cmd = 'data';
         }
         return this.sendToClient(client, {
             c: cmd,
             p: payload
         }, options);
+    };
+    TcpServer.prototype.ask = function (client, cmd, payload, options) {
+        var o = options || {};
+        o.receipt = true;
+        return this.tell(client, cmd, payload, o);
     };
     TcpServer.prototype.add = function (client) {
         this.clients.push(client);

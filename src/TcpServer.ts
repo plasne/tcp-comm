@@ -123,26 +123,19 @@ export class TcpServer extends TcpComponent {
         });
     }
 
-    public send(client: IClient, payload: any, options?: ISendOptions) {
-        return this.sendToClient(
-            client,
-            {
-                c: 'data',
-                p: payload
-            },
-            options
-        );
-    }
-
-    public sendCommand(
+    public tell(
         client: IClient,
-        cmd: string,
-        payload: any,
+        cmd?: string,
+        payload?: any,
         options?: ISendOptions
     ) {
-        const used: string[] = ['data', 'checkin'];
-        if (used.includes(cmd)) {
-            throw new Error(`command "${cmd}" is a reserved keyword.`);
+        if (cmd) {
+            const used: string[] = ['data', 'checkin'];
+            if (used.includes(cmd)) {
+                throw new Error(`command "${cmd}" is a reserved keyword.`);
+            }
+        } else {
+            cmd = 'data';
         }
         return this.sendToClient(
             client,
@@ -152,6 +145,17 @@ export class TcpServer extends TcpComponent {
             },
             options
         );
+    }
+
+    public ask(
+        client: IClient,
+        cmd?: string,
+        payload?: any,
+        options?: ISendOptions
+    ) {
+        const o = options || {};
+        o.receipt = true;
+        return this.tell(client, cmd, payload, o);
     }
 
     public add(client: IClient) {
