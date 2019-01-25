@@ -179,7 +179,7 @@ export class TcpClient extends TcpComponent {
         }, 0);
     }
 
-    public sendCommand(cmd: string, payload: any, options?: ISendOptions) {
+    public tell(cmd: string, payload?: any, options?: ISendOptions) {
         const used: string[] = ['data', 'checkin'];
         if (used.includes(cmd)) {
             throw new Error(`command "${cmd}" is a reserved keyword.`);
@@ -191,6 +191,12 @@ export class TcpClient extends TcpComponent {
             },
             options
         );
+    }
+
+    public ask(cmd: string, payload?: any, options?: ISendOptions) {
+        const o = options || {};
+        o.receipt = true;
+        return this.tell(cmd, payload, o);
     }
 
     protected async process(_: net.Socket, msg: IMessage) {
