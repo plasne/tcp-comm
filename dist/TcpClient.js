@@ -201,7 +201,7 @@ var TcpClient = /** @class */ (function (_super) {
             connectToServer();
         }, 0);
     };
-    TcpClient.prototype.sendCommand = function (cmd, payload, options) {
+    TcpClient.prototype.tell = function (cmd, payload, options) {
         var used = ['data', 'checkin'];
         if (used.includes(cmd)) {
             throw new Error("command \"" + cmd + "\" is a reserved keyword.");
@@ -210,6 +210,11 @@ var TcpClient = /** @class */ (function (_super) {
             c: cmd,
             p: payload
         }, options);
+    };
+    TcpClient.prototype.ask = function (cmd, payload, options) {
+        var o = options || {};
+        o.receipt = true;
+        return this.tell(cmd, payload, o);
     };
     TcpClient.prototype.process = function (_, msg) {
         return __awaiter(this, void 0, void 0, function () {
