@@ -94,6 +94,10 @@ export class TcpClient extends TcpComponent {
         return local.checkin || 10000;
     }
 
+    public get isConnected() {
+        return this.socket && this.socketIsOpen;
+    }
+
     public connect() {
         // ensure errors are being trapped
         if (this.listenerCount('error') < 1) {
@@ -177,6 +181,8 @@ export class TcpClient extends TcpComponent {
         setTimeout(() => {
             connectToServer();
         }, 0);
+
+        return this;
     }
 
     public tell(cmd: string, payload?: any, options?: ISendOptions) {
