@@ -127,6 +127,13 @@ var TcpClient = /** @class */ (function (_super) {
         enumerable: true,
         configurable: true
     });
+    Object.defineProperty(TcpClient.prototype, "isConnected", {
+        get: function () {
+            return this.socket && this.socketIsOpen;
+        },
+        enumerable: true,
+        configurable: true
+    });
     TcpClient.prototype.connect = function () {
         var _this = this;
         // ensure errors are being trapped
@@ -200,6 +207,7 @@ var TcpClient = /** @class */ (function (_super) {
         setTimeout(function () {
             connectToServer();
         }, 0);
+        return this;
     };
     TcpClient.prototype.tell = function (cmd, payload, options) {
         var used = ['data', 'checkin'];
