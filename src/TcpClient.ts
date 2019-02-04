@@ -167,10 +167,7 @@ export class TcpClient extends TcpComponent {
         const connectToServer = () => {
             try {
                 if (!this.socket) return;
-                this.socket.connect(
-                    this.port,
-                    this.address
-                );
+                this.socket.connect(this.port, this.address);
             } catch (error) {
                 this.emit('error', error, 'connect');
                 setTimeout(() => {
@@ -185,21 +182,25 @@ export class TcpClient extends TcpComponent {
         return this;
     }
 
-    public tell(cmd: string, payload?: any, options?: ISendOptions) {
-        const used: string[] = ['data', 'checkin'];
-        if (used.includes(cmd)) {
-            throw new Error(`command "${cmd}" is a reserved keyword.`);
+    public tell(cmd?: string, payload?: any, options?: ISendOptions) {
+        if (cmd) {
+            const used: string[] = ['data', 'checkin'];
+            if (used.includes(cmd)) {
+                throw new Error(`command "${cmd}" is a reserved keyword.`);
+            }
+        } else {
+            cmd = 'data';
         }
         return this.sendToServer(
             {
-                c: cmd,
+                c: cmd || 'data',
                 p: payload
             },
             options
         );
     }
 
-    public ask(cmd: string, payload?: any, options?: ISendOptions) {
+    public ask(cmd?: string, payload?: any, options?: ISendOptions) {
         const o = options || {};
         o.receipt = true;
         return this.tell(cmd, payload, o);

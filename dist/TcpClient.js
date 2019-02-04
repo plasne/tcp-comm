@@ -210,12 +210,17 @@ var TcpClient = /** @class */ (function (_super) {
         return this;
     };
     TcpClient.prototype.tell = function (cmd, payload, options) {
-        var used = ['data', 'checkin'];
-        if (used.includes(cmd)) {
-            throw new Error("command \"" + cmd + "\" is a reserved keyword.");
+        if (cmd) {
+            var used = ['data', 'checkin'];
+            if (used.includes(cmd)) {
+                throw new Error("command \"" + cmd + "\" is a reserved keyword.");
+            }
+        }
+        else {
+            cmd = 'data';
         }
         return this.sendToServer({
-            c: cmd,
+            c: cmd || 'data',
             p: payload
         }, options);
     };
