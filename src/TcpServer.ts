@@ -17,6 +17,7 @@ export interface ITcpServerOptions extends ITcpComponentOptions {
 export interface IClient {
     id: string;
     socket?: net.Socket;
+    metadata?: any;
     lastCheckin?: number;
 }
 
@@ -31,14 +32,8 @@ export declare interface TcpServer {
         ) => void
     ): this;
     on(event: 'listen', listener: () => void): this;
-    on(
-        event: 'connect',
-        listener: (client: IClient, metadata: any) => void
-    ): this;
-    on(
-        event: 'checkin',
-        listener: (client: IClient, metadata: any) => void
-    ): this;
+    on(event: 'connect', listener: (client: IClient) => void): this;
+    on(event: 'checkin', listener: (client: IClient) => void): this;
     on(event: 'disconnect', listener: (client?: IClient) => void): this;
     on(event: 'add', listener: (client: IClient) => void): this;
     on(event: 'remove', listener: (client: IClient) => void): this;
@@ -194,15 +189,16 @@ export class TcpServer extends TcpComponent {
                     client = {
                         id: payload.id,
                         lastCheckin: new Date().valueOf(),
+                        metadata: payload.metadata,
                         socket
                     };
                     this.add(client);
                     isNew = true;
                 }
                 if (isNew) {
-                    this.emit('connect', client, payload);
+                    this.emit('connect', client);
                 }
-                this.emit('checkin', client, payload);
+                this.emit('checkin', client);
                 break;
             }
             default: {

@@ -238,15 +238,16 @@ export class TcpClient extends TcpComponent {
         }
     }
 
-    private async checkinToServer(payload?: any) {
+    private async checkinToServer(metadata?: any) {
         try {
             if (this.socket && this.socketIsOpen) {
-                payload = payload || {};
-                if (!payload.id) payload.id = this.id;
                 await this.sendToServer(
                     {
                         c: 'checkin',
-                        p: payload
+                        p: {
+                            id: this.id,
+                            metadata
+                        }
                     },
                     {
                         receipt: true

@@ -268,7 +268,7 @@ var TcpClient = /** @class */ (function (_super) {
             return Promise.resolve();
         }
     };
-    TcpClient.prototype.checkinToServer = function (payload) {
+    TcpClient.prototype.checkinToServer = function (metadata) {
         return __awaiter(this, void 0, void 0, function () {
             var error_1;
             return __generator(this, function (_a) {
@@ -276,12 +276,12 @@ var TcpClient = /** @class */ (function (_super) {
                     case 0:
                         _a.trys.push([0, 3, , 4]);
                         if (!(this.socket && this.socketIsOpen)) return [3 /*break*/, 2];
-                        payload = payload || {};
-                        if (!payload.id)
-                            payload.id = this.id;
                         return [4 /*yield*/, this.sendToServer({
                                 c: 'checkin',
-                                p: payload
+                                p: {
+                                    id: this.id,
+                                    metadata: metadata
+                                }
                             }, {
                                 receipt: true
                             })];

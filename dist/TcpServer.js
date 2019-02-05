@@ -178,15 +178,16 @@ var TcpServer = /** @class */ (function (_super) {
                             client = {
                                 id: payload_1.id,
                                 lastCheckin: new Date().valueOf(),
+                                metadata: payload_1.metadata,
                                 socket: socket
                             };
                             this.add(client);
                             isNew = true;
                         }
                         if (isNew) {
-                            this.emit('connect', client, payload_1);
+                            this.emit('connect', client);
                         }
-                        this.emit('checkin', client, payload_1);
+                        this.emit('checkin', client);
                         break;
                     }
                     default: {
