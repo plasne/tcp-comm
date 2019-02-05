@@ -31,6 +31,7 @@ export declare class TcpServer extends TcpComponent {
     listen(): void;
     tell(client: IClient, cmd?: string, payload?: any, options?: ISendOptions): Promise<any>;
     ask(client: IClient, cmd?: string, payload?: any, options?: ISendOptions): Promise<any>;
+    broadcast(cmd?: string, payload?: any, options?: ISendOptions): void;
     add(client: IClient): void;
     remove(client: IClient): void;
     protected process(socket: net.Socket, msg: IMessage): Promise<any>;

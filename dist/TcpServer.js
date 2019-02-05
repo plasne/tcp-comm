@@ -137,6 +137,14 @@ var TcpServer = /** @class */ (function (_super) {
         o.receipt = true;
         return this.tell(client, cmd, payload, o);
     };
+    TcpServer.prototype.broadcast = function (cmd, payload, options) {
+        for (var _i = 0, _a = this.clients; _i < _a.length; _i++) {
+            var client = _a[_i];
+            this.tell(client, cmd, payload, options).catch(function () {
+                // ignore any errors with broadcast, it is best effort
+            });
+        }
+    };
     TcpServer.prototype.add = function (client) {
         this.clients.push(client);
         this.emit('add', client);

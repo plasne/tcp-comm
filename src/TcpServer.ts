@@ -158,6 +158,14 @@ export class TcpServer extends TcpComponent {
         return this.tell(client, cmd, payload, o);
     }
 
+    public broadcast(cmd?: string, payload?: any, options?: ISendOptions) {
+        for (const client of this.clients) {
+            this.tell(client, cmd, payload, options).catch(() => {
+                // ignore any errors with broadcast, it is best effort
+            });
+        }
+    }
+
     public add(client: IClient) {
         this.clients.push(client);
         this.emit('add', client);
