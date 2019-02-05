@@ -25,7 +25,7 @@ export declare interface TcpClient {
     ): this;
     on(event: 'listen', listener: () => void): this;
     on(event: 'connect', listener: () => void): this;
-    on(event: 'checkin', listener: () => void): this;
+    on(event: 'checkin', listener: (metadata?: any) => void): this;
     on(event: 'disconnect', listener: () => void): this;
     on(event: 'timeout', listener: () => void): this;
     on(
@@ -253,7 +253,7 @@ export class TcpClient extends TcpComponent {
                         receipt: true
                     }
                 );
-                this.emit('checkin');
+                this.emit('checkin', metadata);
             }
         } catch (error) {
             this.emit('error', error, 'checkin');

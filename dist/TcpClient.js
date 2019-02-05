@@ -287,7 +287,7 @@ var TcpClient = /** @class */ (function (_super) {
                             })];
                     case 1:
                         _a.sent();
-                        this.emit('checkin');
+                        this.emit('checkin', metadata);
                         _a.label = 2;
                     case 2: return [3 /*break*/, 4];
                     case 3:
