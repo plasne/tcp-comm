@@ -17,11 +17,11 @@
         "winston": "^3.1.0"
     },
     "devDependencies": {
-        "@types/dotenv": "^6.1.0",
-        "@types/node": "^10.12.12",
+        "@types/dotenv": "^6.1.1",
+        "@types/node": "^10.14.18",
         "@types/split": "^1.0.0",
-        "@types/uuid": "^3.4.4",
-        "tslint": "^5.11.0",
-        "typescript": "^3.2.2"
+        "@types/uuid": "^3.4.5",
+        "tslint": "^5.20.0",
+        "typescript": "^3.6.3"
     }
 }

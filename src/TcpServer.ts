@@ -86,6 +86,11 @@ export class TcpServer extends TcpComponent {
             // pipe input to a stream and break on messages
             const stream = socket.pipe(split());
 
+            // put errors into the right channel
+            stream.on('error', error => {
+                this.emit('error', error, 'socket');
+            });
+
             // handle messages
             stream.on('data', data => {
                 this.receive(socket, data);
