@@ -87,8 +87,14 @@ export class TcpServer extends TcpComponent {
             const stream = socket.pipe(split());
 
             // put errors into the right channel
-            stream.on('error', error => {
+            socket.on('error', error => {
                 this.emit('error', error, 'socket');
+                if (error.message.includes('ECONN')) {
+                    const client = this.clients.find(c => c.socket === socket);
+                    this.emit('disconnect', client);
+                    if (client) client.socket = undefined;
+                    socket.destroy();
+                }
             });
 
             // handle messages

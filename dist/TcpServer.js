@@ -88,8 +88,15 @@ var TcpServer = /** @class */ (function (_super) {
             // pipe input to a stream and break on messages
             var stream = socket.pipe(split());
             // put errors into the right channel
-            stream.on('error', function (error) {
+            socket.on('error', function (error) {
                 _this.emit('error', error, 'socket');
+                if (error.message.includes('ECONN')) {
+                    var client = _this.clients.find(function (c) { return c.socket === socket; });
+                    _this.emit('disconnect', client);
+                    if (client)
+                        client.socket = undefined;
+                    socket.destroy();
+                }
             });
             // handle messages
             stream.on('data', function (data) {
